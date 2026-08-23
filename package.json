@@ -1,0 +1,17 @@
+{
+  "name": "valibot-to-openapi-monorepo",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.7.0",
+      "onFail": "download"
+    }
+  },
+  "devDependencies": {
+    "vite-plus": "^0.2.9"
+  }
+}
