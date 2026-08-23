@@ -1,0 +1,16 @@
+{
+  "name": "@valibot-to-openapi/test",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "vp check",
+    "fix": "vp check --fix",
+    "generate": "node src/generate.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "valibot": "^1.4.2",
+    "valibot-to-openapi": "workspace:^",
+    "yaml": "^2.8.0"
+  }
+}

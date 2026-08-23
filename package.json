@@ -1,8 +1,18 @@
 {
   "name": "valibot-to-openapi-monorepo",
+  "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "check": "vp fmt --check '*.json' '*.yaml' '*.yml' '*.md' '!packages/**' '!test/**' --no-error-on-unmatched-pattern && vp run -r check",
+    "fix": "vp fmt '*.json' '*.yaml' '*.yml' '*.md' '!packages/**' '!test/**' --no-error-on-unmatched-pattern && vp run -r check --fix",
+    "build": "vp run --filter './packages/*' build",
+    "test": "vp run --filter './packages/*' build && vp run -r test",
+    "generate": "vp run --filter './packages/*' build && pnpm -F @valibot-to-openapi/test generate"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "4.1.10",
+    "vite-plus": "0.2.9"
   },
   "devEngines": {
     "packageManager": {
@@ -10,8 +20,5 @@
       "version": "^11.7.0",
       "onFail": "download"
     }
-  },
-  "devDependencies": {
-    "vite-plus": "^0.2.9"
   }
 }
