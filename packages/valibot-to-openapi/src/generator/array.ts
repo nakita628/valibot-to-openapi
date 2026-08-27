@@ -4,10 +4,6 @@ import type { MapNullableType, MapSubSchema, VersionSpecifics } from '../types/i
 
 /**
  * `v.array(item)` with length validations.
- *
- * @example
- * arraySchema(v.pipe(v.array(v.string()), v.minLength(1)), mapNullableType, mapItem)
- * // { type: 'array', items: { type: 'string' }, minItems: 1 }
  */
 export function arraySchema(
   schema: SchemaOf<'array'>,
@@ -17,12 +13,19 @@ export function arraySchema(
   const validations = inputValidations(schema)
   const length = requirementNumber(validations, 'length')
   const nonEmpty = findValidation(validations, 'non_empty') === undefined ? undefined : 1
-  return {
-    ...mapNullableType('array'),
-    items: mapItem(schema.item),
-    minItems: length ?? requirementNumber(validations, 'min_length') ?? nonEmpty,
-    maxItems: length ?? requirementNumber(validations, 'max_length'),
+  const items = mapItem(schema.item)
+  if (!items.ok) {
+    return items
   }
+  return {
+    ok: true,
+    value: {
+      ...mapNullableType('array'),
+      items: items.value,
+      minItems: length ?? requirementNumber(validations, 'min_length') ?? nonEmpty,
+      maxItems: length ?? requirementNumber(validations, 'max_length'),
+    },
+  } as const
 }
 
 /**
@@ -34,13 +37,20 @@ export function setSchema(
   mapItem: MapSubSchema,
 ) {
   const validations = inputValidations(schema)
-  return {
-    ...mapNullableType('array'),
-    items: mapItem(schema.value),
-    uniqueItems: true,
-    minItems: requirementNumber(validations, 'min_size'),
-    maxItems: requirementNumber(validations, 'max_size'),
+  const items = mapItem(schema.value)
+  if (!items.ok) {
+    return items
   }
+  return {
+    ok: true,
+    value: {
+      ...mapNullableType('array'),
+      items: items.value,
+      uniqueItems: true,
+      minItems: requirementNumber(validations, 'min_size'),
+      maxItems: requirementNumber(validations, 'max_size'),
+    },
+  } as const
 }
 
 /**
@@ -58,11 +68,22 @@ export function tupleSchema(
   mapTupleItems: VersionSpecifics['mapTupleItems'],
 ) {
   const rest = 'rest' in schema ? mapItem(schema.rest) : undefined
-  return {
-    ...mapNullableType('array'),
-    ...mapTupleItems(
-      schema.items.map((item) => mapItem(item)),
-      rest,
-    ),
+  if (rest !== undefined && !rest.ok) {
+    return rest
   }
+  const items = schema.items.map((item) => mapItem(item))
+  const failed = items.find((item) => !item.ok)
+  if (failed !== undefined && !failed.ok) {
+    return failed
+  }
+  return {
+    ok: true,
+    value: {
+      ...mapNullableType('array'),
+      ...mapTupleItems(
+        items.flatMap((item) => (item.ok ? [item.value] : [])),
+        rest?.value,
+      ),
+    },
+  } as const
 }

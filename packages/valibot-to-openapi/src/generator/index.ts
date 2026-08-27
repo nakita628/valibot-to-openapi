@@ -1,6 +1,6 @@
 import type { GenericSchema } from 'valibot'
 
-import { UnknownSchemaTypeError } from '../errors/index.js'
+import { unknownSchemaTypeError } from '../errors/index.js'
 import { isSchemaType, OBJECT_TYPES, TUPLE_TYPES } from '../guard/index.js'
 import { getRefId } from '../metadata/index.js'
 import type {
@@ -34,13 +34,13 @@ export function transformSchema(
   isNullable: boolean,
   defaultValue: unknown,
   ctx: TransformContext,
-): SchemaObject | ReferenceObject {
+) {
   const { specifics, mapItem } = ctx
   if (isSchemaType(schema, 'null')) {
-    return specifics.nullType
+    return { ok: true, value: specifics.nullType } as const
   }
   if (isSchemaType(schema, ['unknown', 'any'])) {
-    return specifics.mapNullableType(undefined, isNullable)
+    return { ok: true, value: specifics.mapNullableType(undefined, isNullable) } as const
   }
   if (isSchemaType(schema, OBJECT_TYPES)) {
     return objectSchema(
@@ -50,14 +50,18 @@ export function transformSchema(
       mapItem,
     )
   }
-  return { ...transformWithoutDefault(schema, isNullable, ctx), default: defaultValue }
+  const result = transformWithoutDefault(schema, isNullable, ctx)
+  if (!result.ok) {
+    return result
+  }
+  return { ok: true, value: { ...result.value, default: defaultValue } } as const
 }
 
 function transformWithoutDefault(
   schema: GenericSchema,
   isNullable: boolean,
   ctx: TransformContext,
-): SchemaObject | ReferenceObject {
+) {
   const { specifics, options, mapItem, generateSchemaRef } = ctx
   const mapNullableType = (type: Parameters<VersionSpecifics['mapNullableType']>[0]) =>
     specifics.mapNullableType(type, isNullable)
@@ -65,19 +69,22 @@ function transformWithoutDefault(
     specifics.mapNullableOfArray(objects, isNullable)
 
   if (isSchemaType(schema, 'string')) {
-    return stringSchema(schema, mapNullableType)
+    return { ok: true, value: stringSchema(schema, mapNullableType) } as const
   }
   if (isSchemaType(schema, 'number')) {
-    return numberSchema(schema, mapNullableType, specifics.getNumberChecks)
+    return {
+      ok: true,
+      value: numberSchema(schema, mapNullableType, specifics.getNumberChecks),
+    } as const
   }
   if (isSchemaType(schema, 'bigint')) {
-    return bigintSchema(mapNullableType)
+    return { ok: true, value: bigintSchema(mapNullableType) } as const
   }
   if (isSchemaType(schema, 'boolean')) {
-    return mapNullableType('boolean')
+    return { ok: true, value: mapNullableType('boolean') } as const
   }
   if (isSchemaType(schema, 'date')) {
-    return dateSchema(mapNullableType)
+    return { ok: true, value: dateSchema(mapNullableType) } as const
   }
   if (isSchemaType(schema, 'lazy')) {
     return lazySchema(schema, mapItem, mapNullableType, (ref) =>
@@ -85,7 +92,7 @@ function transformWithoutDefault(
     )
   }
   if (isSchemaType(schema, 'literal')) {
-    return literalSchema(schema, mapNullableType)
+    return { ok: true, value: literalSchema(schema, mapNullableType) } as const
   }
   if (isSchemaType(schema, ['picklist', 'enum'])) {
     return enumSchema(schema, isNullable, mapNullableType)
@@ -117,5 +124,8 @@ function transformWithoutDefault(
   if (isSchemaType(schema, 'record')) {
     return recordSchema(schema, mapNullableType, mapItem)
   }
-  throw new UnknownSchemaTypeError({ currentSchema: schema, schemaName: getRefId(schema) })
+  return {
+    ok: false,
+    error: unknownSchemaTypeError({ currentSchema: schema, schemaName: getRefId(schema) }),
+  } as const
 }

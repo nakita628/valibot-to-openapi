@@ -1,5 +1,6 @@
 import type { GenericSchema } from 'valibot'
 
+import type { ValibotToOpenAPIError } from '../errors/index.js'
 import type {
   Callbacks,
   Components,
@@ -61,7 +62,11 @@ export type MapNullableOfArray = (
   objects: (SchemaObject | ReferenceObject)[],
 ) => (SchemaObject | ReferenceObject)[]
 
-export type MapSubSchema = (schema: GenericSchema) => SchemaObject | ReferenceObject
+export type MapSubSchema = (
+  schema: GenericSchema,
+) =>
+  | { readonly ok: true; readonly value: SchemaObject | ReferenceObject }
+  | { readonly ok: false; readonly error: ValibotToOpenAPIError }
 
 // 3.0 uses boolean `exclusiveMinimum` / `exclusiveMaximum`, 3.1+ uses numbers.
 export type NumberBounds = {

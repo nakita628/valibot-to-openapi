@@ -23,7 +23,10 @@ for (const version of VERSIONS) {
     registry.registerPath(route)
   }
   const document = generateDocument(registry.definitions, { openapi: version, info })
-  const yaml = stringify(document)
+  if (!document.ok) {
+    throw new Error(document.error.message)
+  }
+  const yaml = stringify(document.value)
   writeFileSync(new URL(`valibot-to-openapi-${version}.yaml`, outDir), yaml)
   console.log(`OK   ${version}  valibot-to-openapi-${version}.yaml (${yaml.length} bytes)`)
 }

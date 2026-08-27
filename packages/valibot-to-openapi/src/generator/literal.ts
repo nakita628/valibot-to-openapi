@@ -1,4 +1,4 @@
-import { ValibotToOpenAPIError } from '../errors/index.js'
+import { valibotToOpenAPIError } from '../errors/index.js'
 import type { SchemaOf } from '../guard/index.js'
 import type { MapNullableType } from '../types/index.js'
 import { enumInfo } from '../utils/index.js'
@@ -27,7 +27,8 @@ export function literalSchema(schema: SchemaOf<'literal'>, mapNullableType: MapN
  * described by a single JSON Schema `type`, so they must be typed manually via `openapi()`.
  *
  * @example
- * enumSchema(v.picklist(['a', 'b']), false, mapNullableType) // { type: 'string', enum: ['a', 'b'] }
+ * enumSchema(v.picklist(['a', 'b']), false, mapNullableType)
+ * // { ok: true, value: { type: 'string', enum: ['a', 'b'] } }
  */
 export function enumSchema(
   schema: SchemaOf<'picklist'> | SchemaOf<'enum'>,
@@ -36,12 +37,18 @@ export function enumSchema(
 ) {
   const { type, values } = enumInfo(schema.options)
   if (type === 'mixed') {
-    throw new ValibotToOpenAPIError(
-      'Enum has mixed string and number values, please specify the OpenAPI type manually using `openapi({ type })`',
-    )
+    return {
+      ok: false,
+      error: valibotToOpenAPIError(
+        'Enum has mixed string and number values, please specify the OpenAPI type manually using `openapi({ type })`',
+      ),
+    } as const
   }
   return {
-    ...mapNullableType(type === 'numeric' ? 'integer' : 'string'),
-    enum: isNullable ? [...values, null] : values,
-  }
+    ok: true,
+    value: {
+      ...mapNullableType(type === 'numeric' ? 'integer' : 'string'),
+      enum: isNullable ? [...values, null] : values,
+    },
+  } as const
 }

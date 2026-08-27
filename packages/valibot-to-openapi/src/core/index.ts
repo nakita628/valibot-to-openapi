@@ -61,19 +61,24 @@ export function generateDocument(
   definitions: readonly Definition[],
   config: OpenAPIObjectConfig,
   options?: GeneratorOptions,
-): OpenAPIObject {
+) {
   const isV30 = config.openapi.startsWith('3.0')
   const ctx = createContext(specificsFor(config.openapi), options)
-  const { components, paths, webhooks } = generateDocumentData(
+  const data = generateDocumentData(
     ctx,
     isV30 ? definitions.filter((definition) => !isWebhook(definition)) : definitions,
   )
-  return {
+  if (!data.ok) {
+    return data
+  }
+  const { components, paths, webhooks } = data.value
+  const document: OpenAPIObject = {
     ...config,
     components,
     paths,
     ...(isV30 ? {} : { webhooks }),
   }
+  return { ok: true, value: document } as const
 }
 
 /**
@@ -87,12 +92,16 @@ export function generateComponents(
   definitions: readonly Definition[],
   config: Pick<OpenAPIObjectConfig, 'openapi'>,
   options?: GeneratorOptions,
-): Pick<OpenAPIObject, 'components'> {
+) {
   const ctx = createContext(specificsFor(config.openapi), options)
-  return { components: generateDocumentData(ctx, definitions).components }
+  const data = generateDocumentData(ctx, definitions)
+  if (!data.ok) {
+    return data
+  }
+  return { ok: true, value: { components: data.value.components } } as const
 }
 
-export type OpenAPIRegistry = {
+export type Registry = {
   /** Own definitions preceded by the definitions of every parent registry. */
   readonly definitions: readonly OpenAPIDefinition[]
   /** Registers a component schema under `/components/schemas/${refId}`. */
@@ -125,7 +134,7 @@ export type OpenAPIRegistry = {
  * const User = registry.register('User', v.object({ name: v.string() }))
  * registry.registerPath({ method: 'get', path: '/users', responses: { 200: { description: 'OK', content: { 'application/json': { schema: v.array(User) } } } } })
  */
-export function createRegistry(parents?: readonly OpenAPIRegistry[]): OpenAPIRegistry {
+export function createRegistry(parents?: readonly Registry[]): Registry {
   const own: OpenAPIDefinition[] = []
   return {
     get definitions() {
@@ -155,5 +164,94 @@ export function createRegistry(parents?: readonly OpenAPIRegistry[]): OpenAPIReg
       own.push({ type: 'component', componentType: type, name, component })
       return { name, ref: { $ref: componentRef(type, name) } }
     },
+  }
+}
+
+/**
+ * Class form of `createRegistry()`, mirroring zod-to-openapi's `OpenAPIRegistry`. Both forms
+ * share the registry shape, so instances and `createRegistry()` results can be mixed as parents.
+ */
+export class OpenAPIRegistry implements Registry {
+  private readonly registry: Registry
+
+  constructor(parents?: readonly Registry[]) {
+    this.registry = createRegistry(parents)
+  }
+
+  get definitions() {
+    return this.registry.definitions
+  }
+
+  register<T extends GenericSchema>(refId: string, schema: T) {
+    return this.registry.register(refId, schema)
+  }
+
+  registerParameter<T extends GenericSchema>(refId: string, schema: T) {
+    return this.registry.registerParameter(refId, schema)
+  }
+
+  registerPath(route: RouteConfig) {
+    this.registry.registerPath(route)
+  }
+
+  registerWebhook(webhook: RouteConfig) {
+    this.registry.registerWebhook(webhook)
+  }
+
+  registerComponent<K extends ComponentTypeKey>(
+    type: K,
+    name: string,
+    component: ComponentTypeOf<K>,
+  ) {
+    return this.registry.registerComponent(type, name, component)
+  }
+}
+
+/**
+ * Class forms of `generateDocument()` / `generateComponents()` pinned to one OpenAPI version,
+ * mirroring zod-to-openapi's `OpenApiGeneratorV3` / `V31`. `OpenApiGeneratorV32` covers 3.2.
+ */
+export class OpenApiGeneratorV3 {
+  constructor(
+    private readonly definitions: readonly Definition[],
+    private readonly options?: GeneratorOptions,
+  ) {}
+
+  generateDocument(config: OpenAPIObjectConfigV30) {
+    return generateDocument(this.definitions, config, this.options)
+  }
+
+  generateComponents() {
+    return generateComponents(this.definitions, { openapi: '3.0.0' }, this.options)
+  }
+}
+
+export class OpenApiGeneratorV31 {
+  constructor(
+    private readonly definitions: readonly Definition[],
+    private readonly options?: GeneratorOptions,
+  ) {}
+
+  generateDocument(config: OpenAPIObjectConfigV31) {
+    return generateDocument(this.definitions, config, this.options)
+  }
+
+  generateComponents() {
+    return generateComponents(this.definitions, { openapi: '3.1.0' }, this.options)
+  }
+}
+
+export class OpenApiGeneratorV32 {
+  constructor(
+    private readonly definitions: readonly Definition[],
+    private readonly options?: GeneratorOptions,
+  ) {}
+
+  generateDocument(config: OpenAPIObjectConfigV32) {
+    return generateDocument(this.definitions, config, this.options)
+  }
+
+  generateComponents() {
+    return generateComponents(this.definitions, { openapi: '3.2.0' }, this.options)
   }
 }

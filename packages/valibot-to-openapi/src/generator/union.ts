@@ -26,10 +26,6 @@ function flattenUnionOptions(schema: GenericSchema): readonly GenericSchema[] {
 /**
  * `v.union([...])` → `anyOf` (or `oneOf` when preferred). Nested unions are flattened and
  * nullable options are unwrapped, the whole union being marked nullable instead.
- *
- * @example
- * unionSchema(v.union([v.string(), v.number()]), mapNullableOfArray, mapItem, undefined)
- * // { anyOf: [{ type: 'string' }, { type: 'number' }] }
  */
 export function unionSchema(
   schema: SchemaOf<'union'>,
@@ -38,11 +34,17 @@ export function unionSchema(
   preferredType: UnionPreferredType | undefined,
 ) {
   const key = getInternalMetadata(schema).unionPreferredType ?? preferredType ?? 'anyOf'
-  const schemas = mapNullableOfArray(
-    flattenUnionOptions(schema).map((option) => mapItem(unwrapNullable(option))),
-  )
+  const options = flattenUnionOptions(schema).map((option) => mapItem(unwrapNullable(option)))
+  const failed = options.find((option) => !option.ok)
+  if (failed !== undefined && !failed.ok) {
+    return failed
+  }
+  const schemas = mapNullableOfArray(options.flatMap((option) => (option.ok ? [option.value] : [])))
   // `anyOf` / `oneOf` must be non-empty arrays; a union of only `undefined` accepts anything
-  return schemas.length === 0 ? {} : { [key]: schemas }
+  if (schemas.length === 0) {
+    return { ok: true, value: {} } as const
+  }
+  return { ok: true, value: { [key]: schemas } } as const
 }
 
 function discriminatorValues(schema: GenericSchema, key: string): readonly string[] {
@@ -100,15 +102,23 @@ export function variantSchema(
   mapItem: MapSubSchema,
   generateSchemaRef: (refId: string) => string,
 ) {
-  const optionSchemas = schema.options.map((option) => mapItem(option))
+  const options = schema.options.map((option) => mapItem(option))
+  const failed = options.find((option) => !option.ok)
+  if (failed !== undefined && !failed.ok) {
+    return failed
+  }
+  const optionSchemas = options.flatMap((option) => (option.ok ? [option.value] : []))
   if (isNullable) {
-    return { oneOf: mapNullableOfArray(optionSchemas, isNullable) }
+    return { ok: true, value: { oneOf: mapNullableOfArray(optionSchemas, isNullable) } } as const
   }
   const discriminator = discriminatorMapping(schema.options, schema.key, generateSchemaRef)
   return {
-    oneOf: optionSchemas,
-    ...(discriminator === undefined ? {} : { discriminator }),
-  }
+    ok: true,
+    value: {
+      oneOf: optionSchemas,
+      ...(discriminator === undefined ? {} : { discriminator }),
+    },
+  } as const
 }
 
 function flattenIntersectOptions(schema: GenericSchema): readonly GenericSchema[] {
@@ -128,9 +138,17 @@ export function intersectSchema(
     isNullable: boolean,
   ) => (SchemaObject | ReferenceObject)[],
   mapItem: MapSubSchema,
-): SchemaObject {
-  const allOfSchema: SchemaObject = {
-    allOf: flattenIntersectOptions(schema).map((option) => mapItem(option)),
+) {
+  const options = flattenIntersectOptions(schema).map((option) => mapItem(option))
+  const failed = options.find((option) => !option.ok)
+  if (failed !== undefined && !failed.ok) {
+    return failed
   }
-  return isNullable ? { anyOf: mapNullableOfArray([allOfSchema], isNullable) } : allOfSchema
+  const allOfSchema: SchemaObject = {
+    allOf: options.flatMap((option) => (option.ok ? [option.value] : [])),
+  }
+  return {
+    ok: true,
+    value: isNullable ? { anyOf: mapNullableOfArray([allOfSchema], isNullable) } : allOfSchema,
+  } as const
 }

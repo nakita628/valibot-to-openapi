@@ -7,7 +7,6 @@ import type {
   OpenAPIComponentObject,
   OpenAPIDefinition,
   ParameterObject,
-  PathItemObject,
   ReferenceObject,
   SchemaObject,
 } from '../types/index.js'
@@ -37,28 +36,24 @@ export function sortDefinitions(definitions: readonly Definition[]): readonly De
   return definitions.toSorted((left, right) => generationIndex(left) - generationIndex(right))
 }
 
-function generateSingle(ctx: GenerationContext, definition: Definition): void {
+function generateSingle(ctx: GenerationContext, definition: Definition) {
   if (isSchema(definition)) {
-    generateSchemaWithRef(ctx, definition)
-    return
+    return generateSchemaWithRef(ctx, definition)
   }
-  switch (definition.type) {
-    case 'parameter':
-      generateParameterDefinition(ctx, definition.schema)
-      return
-    case 'schema':
-      generateSchemaWithRef(ctx, definition.schema)
-      return
-    case 'route':
-      generateSingleRoute(ctx, definition.route, 'paths')
-      return
-    case 'webhook':
-      generateSingleRoute(ctx, definition.webhook, 'webhooks')
-      return
-    case 'component':
-      ctx.rawComponents.push(definition)
-      return
+  if (definition.type === 'parameter') {
+    return generateParameterDefinition(ctx, definition.schema)
   }
+  if (definition.type === 'schema') {
+    return generateSchemaWithRef(ctx, definition.schema)
+  }
+  if (definition.type === 'route') {
+    return generateSingleRoute(ctx, definition.route, 'paths')
+  }
+  if (definition.type === 'webhook') {
+    return generateSingleRoute(ctx, definition.webhook, 'webhooks')
+  }
+  ctx.rawComponents.push(definition)
+  return { ok: true, value: undefined } as const
 }
 
 function isSchemaComponent(value: OpenAPIComponentObject): value is SchemaObject | ReferenceObject {
@@ -118,20 +113,19 @@ function buildComponents(ctx: GenerationContext): ComponentsObject {
 /**
  * Runs every definition through the context and returns the document fragments.
  */
-export function generateDocumentData(
-  ctx: GenerationContext,
-  definitions: readonly Definition[],
-): {
-  readonly components: ComponentsObject
-  readonly paths: { [path: string]: PathItemObject }
-  readonly webhooks: { [path: string]: PathItemObject }
-} {
+export function generateDocumentData(ctx: GenerationContext, definitions: readonly Definition[]) {
   for (const definition of sortDefinitions(definitions)) {
-    generateSingle(ctx, definition)
+    const result = generateSingle(ctx, definition)
+    if (!result.ok) {
+      return result
+    }
   }
   return {
-    components: buildComponents(ctx),
-    paths: Object.fromEntries(ctx.pathRefs),
-    webhooks: Object.fromEntries(ctx.webhookRefs),
-  }
+    ok: true,
+    value: {
+      components: buildComponents(ctx),
+      paths: Object.fromEntries(ctx.pathRefs),
+      webhooks: Object.fromEntries(ctx.webhookRefs),
+    },
+  } as const
 }

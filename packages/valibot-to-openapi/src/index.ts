@@ -1,18 +1,27 @@
-export { createRegistry, generateComponents, generateDocument } from './core/index.js'
+export {
+  createRegistry,
+  generateComponents,
+  generateDocument,
+  OpenAPIRegistry,
+  OpenApiGeneratorV3,
+  OpenApiGeneratorV31,
+  OpenApiGeneratorV32,
+} from './core/index.js'
 export type {
   OpenAPIObjectConfig,
   OpenAPIObjectConfigV30,
   OpenAPIObjectConfigV31,
   OpenAPIObjectConfigV32,
-  OpenAPIRegistry,
+  Registry,
 } from './core/index.js'
 export {
-  ConflictError,
-  MissingParameterDataError,
-  UnknownSchemaTypeError,
-  ValibotToOpenAPIError,
+  conflictError,
+  enhanceMissingParametersError,
+  missingParameterDataError,
+  unknownSchemaTypeError,
+  valibotToOpenAPIError,
 } from './errors/index.js'
-export type { MissingParameterDataErrorProps } from './errors/index.js'
+export type { ValibotToOpenAPIError } from './errors/index.js'
 export { getOpenApiMetadata, getRefId, openapi } from './metadata/index.js'
 export type { OpenapiAction } from './metadata/index.js'
 export type {

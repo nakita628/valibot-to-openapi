@@ -36,21 +36,6 @@ export function omitBy<T extends object>(
 }
 
 /**
- * Maps every value of a record, keeping the keys.
- *
- * @example
- * mapValues({ a: 1 }, (n) => n * 2) // { a: 2 }
- */
-export function mapValues<V, R>(
-  object: { readonly [key: string]: V },
-  mapper: (value: V, key: string) => R,
-) {
-  return Object.fromEntries(
-    Object.entries(object).map(([key, value]) => [key, mapper(value, key)] as const),
-  )
-}
-
-/**
  * Removes `undefined` entries from an array.
  */
 export function compact<T>(values: readonly (T | undefined)[]) {

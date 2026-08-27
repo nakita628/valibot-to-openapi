@@ -4,11 +4,12 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "check": "vp fmt --check '*.json' '*.yaml' '*.yml' '*.md' '!packages/**' '!test/**' --no-error-on-unmatched-pattern && vp run -r check",
-    "fix": "vp fmt '*.json' '*.yaml' '*.yml' '*.md' '!packages/**' '!test/**' --no-error-on-unmatched-pattern && vp run -r check --fix",
+    "check": "vp fmt --check '*.json' '*.yaml' '*.yml' '*.md' '!packages/**' '!test/**' '!example/**' --no-error-on-unmatched-pattern && vp run -r check",
+    "fix": "vp fmt '*.json' '*.yaml' '*.yml' '*.md' '!packages/**' '!test/**' '!example/**' --no-error-on-unmatched-pattern && vp run -r check --fix",
     "build": "vp run --filter './packages/*' build",
     "test": "vp run --filter './packages/*' build && vp run -r test",
-    "generate": "vp run --filter './packages/*' build && pnpm -F @valibot-to-openapi/test generate"
+    "generate": "vp run --filter './packages/*' build && pnpm -F @valibot-to-openapi/test generate",
+    "example": "vp run --filter './packages/*' build && pnpm -F @valibot-to-openapi/example example"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "4.1.10",

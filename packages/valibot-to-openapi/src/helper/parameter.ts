@@ -1,6 +1,6 @@
 import type { GenericSchema } from 'valibot'
 
-import { ConflictError, MissingParameterDataError } from '../errors/index.js'
+import { conflictError, missingParameterDataError } from '../errors/index.js'
 import { isSchemaType, OBJECT_TYPES } from '../guard/index.js'
 import {
   buildParameterMetadata,
@@ -10,13 +10,7 @@ import {
   getRefId,
 } from '../metadata/index.js'
 import { isNullableSchema, isOptionalSchema } from '../pipe/index.js'
-import type {
-  BaseParameterObject,
-  ParameterLocation,
-  ParameterObject,
-  ReferenceObject,
-  GenerationContext,
-} from '../types/index.js'
+import type { GenerationContext, ParameterLocation } from '../types/index.js'
 import { compact, parameterRef } from '../utils/index.js'
 import { generateSchemaWithRef } from './schema.js'
 
@@ -25,46 +19,48 @@ type ParameterData = {
   readonly name?: string
 }
 
-function getParameterRef(
-  ctx: GenerationContext,
-  schema: GenericSchema,
-  external?: ParameterData,
-): ReferenceObject | undefined {
+function getParameterRef(ctx: GenerationContext, schema: GenericSchema, external?: ParameterData) {
   const parameterMetadata = getOpenApiMetadata(schema).param
   const refId = getInternalMetadata(schema).refId
   const existingRef = refId === undefined ? undefined : ctx.paramRefs.get(refId)
 
   if (refId === undefined || existingRef === undefined) {
-    return undefined
+    return { ok: true, value: undefined } as const
   }
 
   if (
     (parameterMetadata && existingRef.in !== parameterMetadata.in) ||
     (external?.in && existingRef.in !== external.in)
   ) {
-    throw new ConflictError(
-      `Conflicting location for parameter ${existingRef.name}. Use the same \`in\` in the route request and in \`openapi({ param: { in } })\``,
-      {
-        key: 'in',
-        values: compact([existingRef.in, external?.in, parameterMetadata?.in]),
-      },
-    )
+    return {
+      ok: false,
+      error: conflictError(
+        `Conflicting location for parameter ${existingRef.name}. Use the same \`in\` in the route request and in \`openapi({ param: { in } })\``,
+        {
+          key: 'in',
+          values: compact([existingRef.in, external?.in, parameterMetadata?.in]),
+        },
+      ),
+    } as const
   }
 
   if (
     (parameterMetadata && existingRef.name !== parameterMetadata.name) ||
     (external?.name && existingRef.name !== external.name)
   ) {
-    throw new ConflictError(
-      'Conflicting names for parameter. Use the same key in the route object and in `openapi({ param: { name } })`',
-      {
-        key: 'name',
-        values: compact([existingRef.name, external?.name, parameterMetadata?.name]),
-      },
-    )
+    return {
+      ok: false,
+      error: conflictError(
+        'Conflicting names for parameter. Use the same key in the route object and in `openapi({ param: { name } })`',
+        {
+          key: 'name',
+          values: compact([existingRef.name, external?.name, parameterMetadata?.name]),
+        },
+      ),
+    } as const
   }
 
-  return { $ref: parameterRef(refId) }
+  return { ok: true, value: { $ref: parameterRef(refId) } } as const
 }
 
 /**
@@ -75,17 +71,24 @@ export function generateSimpleParameter(
   ctx: GenerationContext,
   schema: GenericSchema,
   externalParamMetadata?: ParameterData,
-): BaseParameterObject {
+) {
   const paramMetadata = getParamMetadata(schema).param
   const mergedParamMetadata = { ...paramMetadata, ...externalParamMetadata }
   const required = !isOptionalSchema(schema) && !isNullableSchema(schema)
-  return {
-    schema: generateSchemaWithRef(ctx, schema),
-    required,
-    ...(Object.keys(mergedParamMetadata).length > 0
-      ? buildParameterMetadata(mergedParamMetadata)
-      : {}),
+  const generated = generateSchemaWithRef(ctx, schema)
+  if (!generated.ok) {
+    return generated
   }
+  return {
+    ok: true,
+    value: {
+      schema: generated.value,
+      required,
+      ...(Object.keys(mergedParamMetadata).length > 0
+        ? buildParameterMetadata(mergedParamMetadata)
+        : {}),
+    },
+  } as const
 }
 
 /**
@@ -95,36 +98,43 @@ export function generateParameter(
   ctx: GenerationContext,
   schema: GenericSchema,
   externalParamMetadata?: ParameterData,
-): ParameterObject {
+) {
   const paramMetadata = getOpenApiMetadata(schema).param
   const paramName = externalParamMetadata?.name ?? paramMetadata?.name
   const paramLocation = externalParamMetadata?.in ?? paramMetadata?.in
 
   if (!paramName) {
-    throw new MissingParameterDataError({ missingField: 'name' })
+    return { ok: false, error: missingParameterDataError({ missingField: 'name' }) } as const
   }
   if (!paramLocation) {
-    throw new MissingParameterDataError({ missingField: 'in', paramName })
+    return {
+      ok: false,
+      error: missingParameterDataError({ missingField: 'in', paramName }),
+    } as const
   }
 
-  return {
-    ...generateSimpleParameter(ctx, schema, externalParamMetadata),
-    in: paramLocation,
-    name: paramName,
+  const simple = generateSimpleParameter(ctx, schema, externalParamMetadata)
+  if (!simple.ok) {
+    return simple
   }
+  return {
+    ok: true,
+    value: {
+      ...simple.value,
+      in: paramLocation,
+      name: paramName,
+    },
+  } as const
 }
 
 /**
  * Generates a registered parameter (`registerParameter`) into `components.parameters`.
  */
-export function generateParameterDefinition(
-  ctx: GenerationContext,
-  schema: GenericSchema,
-): ParameterObject | ReferenceObject {
+export function generateParameterDefinition(ctx: GenerationContext, schema: GenericSchema) {
   const refId = getRefId(schema)
   const result = generateParameter(ctx, schema)
-  if (refId !== undefined) {
-    ctx.paramRefs.set(refId, result)
+  if (result.ok && refId !== undefined) {
+    ctx.paramRefs.set(refId, result.value)
   }
   return result
 }
@@ -137,47 +147,74 @@ export function generateInlineParameters(
   ctx: GenerationContext,
   schema: GenericSchema,
   location: ParameterLocation,
-): (ParameterObject | ReferenceObject)[] {
+) {
   const parameterMetadata = getOpenApiMetadata(schema).param
   const referencedSchema = getParameterRef(ctx, schema, { in: location })
+  if (!referencedSchema.ok) {
+    return referencedSchema
+  }
 
-  if (referencedSchema) {
-    return [referencedSchema]
+  if (referencedSchema.value) {
+    return { ok: true, value: [referencedSchema.value] } as const
   }
 
   if (isSchemaType(schema, OBJECT_TYPES)) {
-    return Object.entries(schema.entries).map(([key, entry]) => {
+    const entries = Object.entries(schema.entries).map(([key, entry]) => {
       const innerParameterMetadata = getOpenApiMetadata(entry).param
       const referencedEntry = getParameterRef(ctx, entry, { in: location, name: key })
-
-      if (referencedEntry) {
+      if (!referencedEntry.ok) {
         return referencedEntry
       }
 
+      if (referencedEntry.value) {
+        return { ok: true, value: referencedEntry.value } as const
+      }
+
       if (innerParameterMetadata?.name && innerParameterMetadata.name !== key) {
-        throw new ConflictError(
-          'Conflicting names for parameter. Use the same key in the route object and in `openapi({ param: { name } })`',
-          { key: 'name', values: [key, innerParameterMetadata.name] },
-        )
+        return {
+          ok: false,
+          error: conflictError(
+            'Conflicting names for parameter. Use the same key in the route object and in `openapi({ param: { name } })`',
+            { key: 'name', values: [key, innerParameterMetadata.name] },
+          ),
+        } as const
       }
 
       if (innerParameterMetadata?.in && innerParameterMetadata.in !== location) {
-        throw new ConflictError(
-          `Conflicting location for parameter ${innerParameterMetadata.name ?? key}. Use the same \`in\` in the route request and in \`openapi({ param: { in } })\``,
-          { key: 'in', values: [location, innerParameterMetadata.in] },
-        )
+        return {
+          ok: false,
+          error: conflictError(
+            `Conflicting location for parameter ${innerParameterMetadata.name ?? key}. Use the same \`in\` in the route request and in \`openapi({ param: { in } })\``,
+            { key: 'in', values: [location, innerParameterMetadata.in] },
+          ),
+        } as const
       }
 
       return generateParameter(ctx, entry, { name: key, in: location })
     })
+    const failed = entries.find((entry) => !entry.ok)
+    if (failed !== undefined && !failed.ok) {
+      return failed
+    }
+    return {
+      ok: true,
+      value: entries.flatMap((entry) => (entry.ok ? [entry.value] : [])),
+    } as const
   }
 
   if (parameterMetadata?.in && parameterMetadata.in !== location) {
-    throw new ConflictError(
-      `Conflicting location for parameter ${parameterMetadata.name}. Use the same \`in\` in the route request and in \`openapi({ param: { in } })\``,
-      { key: 'in', values: [location, parameterMetadata.in] },
-    )
+    return {
+      ok: false,
+      error: conflictError(
+        `Conflicting location for parameter ${parameterMetadata.name}. Use the same \`in\` in the route request and in \`openapi({ param: { in } })\``,
+        { key: 'in', values: [location, parameterMetadata.in] },
+      ),
+    } as const
   }
 
-  return [generateParameter(ctx, schema, { in: location })]
+  const single = generateParameter(ctx, schema, { in: location })
+  if (!single.ok) {
+    return single
+  }
+  return { ok: true, value: [single.value] } as const
 }

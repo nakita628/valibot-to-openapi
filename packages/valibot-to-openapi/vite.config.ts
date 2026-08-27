@@ -5,6 +5,7 @@ export default defineConfig({
   pack: {
     entry: {
       index: './src/index.ts',
+      valibot: './src/valibot/index.ts',
     },
     dts: true,
     // tsdown defaults to `.mjs` / `.d.mts` for node; `exports` points at `.js` / `.d.ts`.
@@ -157,8 +158,8 @@ export default defineConfig({
               patterns: [
                 {
                   regex:
-                    '^(\\.\\./)+(core|errors|generator|guard|helper|metadata|pipe|specifics|utils)(/.*)?$',
-                  message: 'types may only import openapi',
+                    '^(\\.\\./)+(core|generator|guard|helper|metadata|pipe|specifics|utils)(/.*)?$',
+                  message: 'types may only import openapi, errors',
                 },
               ],
             },

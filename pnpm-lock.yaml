@@ -214,6 +214,21 @@ importers:
         specifier: 0.2.9
         version: 0.2.9(@types/node@26.2.0)(@vitest/coverage-v8@4.1.10)(vite@8.2.2(@types/node@26.2.0)(yaml@2.9.0))(yaml@2.9.0)
 
+  example:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.2.0
+      valibot:
+        specifier: ^1.4.2
+        version: 1.4.2
+      valibot-to-openapi:
+        specifier: workspace:^
+        version: link:../packages/valibot-to-openapi
+      yaml:
+        specifier: ^2.8.0
+        version: 2.9.0
+
   packages/valibot-to-openapi:
     devDependencies:
       '@types/node':

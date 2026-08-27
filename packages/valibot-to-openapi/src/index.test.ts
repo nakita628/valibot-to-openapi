@@ -1,11 +1,11 @@
-import * as v from 'valibot'
 import { describe, expect, it } from 'vite-plus/test'
 
-import { createRegistry, generateComponents, generateDocument, openapi } from './index.js'
+import { createRegistry, generateComponents, generateDocument } from './index.js'
+import * as v from './valibot/index.js'
 
 describe('smoke', () => {
   it('generates a component schema with nested refs, nullable and defaults', () => {
-    const Id = v.pipe(v.string(), v.uuid(), openapi('Id', { description: 'The entity id' }))
+    const Id = v.pipe(v.string(), v.uuid(), v.openapi('Id', { description: 'The entity id' }))
     const User = v.pipe(
       v.object({
         id: Id,
@@ -15,9 +15,10 @@ describe('smoke', () => {
         tags: v.pipe(v.array(v.string()), v.nonEmpty()),
         role: v.picklist(['admin', 'user']),
       }),
-      openapi('User'),
+      v.openapi('User'),
     )
-    expect(generateComponents([User], { openapi: '3.0.0' }).components).toStrictEqual({
+    const result = generateComponents([User], { openapi: '3.0.0' })
+    expect(result.ok ? result.value.components : result).toStrictEqual({
       schemas: {
         Id: { type: 'string', format: 'uuid', description: 'The entity id' },
         User: {
@@ -44,7 +45,7 @@ describe('smoke', () => {
       method: 'get',
       path: '/users/{id}',
       request: {
-        params: v.object({ id: v.pipe(v.string(), openapi({ param: { description: 'id' } })) }),
+        params: v.object({ id: v.pipe(v.string(), v.openapi({ param: { description: 'id' } })) }),
         query: v.object({ limit: v.optional(v.number()) }),
       },
       responses: {
@@ -64,39 +65,42 @@ describe('smoke', () => {
       info: { title: 'API', version: '1.0.0' },
     })
     expect(document).toStrictEqual({
-      openapi: '3.1.0',
-      info: { title: 'API', version: '1.0.0' },
-      components: {
-        schemas: {
-          User: {
-            type: 'object',
-            properties: { name: { type: 'string' } },
-            required: ['name'],
+      ok: true,
+      value: {
+        openapi: '3.1.0',
+        info: { title: 'API', version: '1.0.0' },
+        components: {
+          schemas: {
+            User: {
+              type: 'object',
+              properties: { name: { type: 'string' } },
+              required: ['name'],
+            },
           },
+          parameters: {},
         },
-        parameters: {},
-      },
-      paths: {
-        '/users/{id}': {
-          get: {
-            parameters: [
-              {
-                schema: { type: 'string' },
-                required: true,
-                description: 'id',
-                name: 'id',
-                in: 'path',
-              },
-              { schema: { type: 'number' }, required: false, name: 'limit', in: 'query' },
-            ],
-            responses: {
-              200: {
-                description: 'OK',
-                content: {
-                  'application/json': {
-                    schema: {
-                      type: ['array', 'null'],
-                      items: { $ref: '#/components/schemas/User' },
+        paths: {
+          '/users/{id}': {
+            get: {
+              parameters: [
+                {
+                  schema: { type: 'string' },
+                  required: true,
+                  description: 'id',
+                  name: 'id',
+                  in: 'path',
+                },
+                { schema: { type: 'number' }, required: false, name: 'limit', in: 'query' },
+              ],
+              responses: {
+                200: {
+                  description: 'OK',
+                  content: {
+                    'application/json': {
+                      schema: {
+                        type: ['array', 'null'],
+                        items: { $ref: '#/components/schemas/User' },
+                      },
                     },
                   },
                 },
@@ -104,9 +108,9 @@ describe('smoke', () => {
             },
           },
         },
-      },
-      webhooks: {
-        userCreated: { post: { responses: { 200: { description: 'OK' } } } },
+        webhooks: {
+          userCreated: { post: { responses: { 200: { description: 'OK' } } } },
+        },
       },
     })
   })

@@ -1,5 +1,4 @@
-import * as v from 'valibot'
-import { openapi } from 'valibot-to-openapi'
+import * as v from 'valibot-to-openapi/valibot'
 
 export const User = v.pipe(
   v.object({
@@ -9,7 +8,7 @@ export const User = v.pipe(
     age: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
     role: v.optional(v.picklist(['admin', 'member']), 'member'),
   }),
-  openapi('User', { description: 'A registered user' }),
+  v.openapi('User', { description: 'A registered user' }),
 )
 
 export const Post = v.pipe(
@@ -21,7 +20,7 @@ export const Post = v.pipe(
     tags: v.array(v.string()),
     publishedAt: v.optional(v.date()),
   }),
-  openapi('Post'),
+  v.openapi('Post'),
 )
 
 export const routes = [

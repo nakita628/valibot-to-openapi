@@ -31,5 +31,9 @@ export function lazySchema(
   mapNullableType: MapNullableType,
   mapNullableRef: MapNullableRef,
 ) {
-  return mapRecursive(mapItem(schema.getter(undefined)), mapNullableType, mapNullableRef)
+  const inner = mapItem(schema.getter(undefined))
+  if (!inner.ok) {
+    return inner
+  }
+  return { ok: true, value: mapRecursive(inner.value, mapNullableType, mapNullableRef) } as const
 }

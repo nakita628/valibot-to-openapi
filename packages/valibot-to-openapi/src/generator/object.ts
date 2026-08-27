@@ -1,8 +1,8 @@
 import type { SchemaOf } from '../guard/index.js'
 import { isSchemaType } from '../guard/index.js'
 import { isOptionalSchema } from '../pipe/index.js'
-import type { MapNullableType, MapSubSchema, SchemaObject } from '../types/index.js'
-import { isString, mapValues } from '../utils/index.js'
+import type { MapNullableType, MapSubSchema } from '../types/index.js'
+import { isString } from '../utils/index.js'
 
 type ObjectSchema =
   | SchemaOf<'object'>
@@ -12,15 +12,19 @@ type ObjectSchema =
 
 function additionalProperties(schema: ObjectSchema, mapItem: MapSubSchema) {
   if (schema.type === 'strict_object') {
-    return { additionalProperties: false }
+    return { ok: true, value: { additionalProperties: false } } as const
   }
   if (schema.type === 'loose_object') {
-    return { additionalProperties: true }
+    return { ok: true, value: { additionalProperties: true } } as const
   }
   if (schema.type === 'object_with_rest') {
-    return { additionalProperties: mapItem(schema.rest) }
+    const rest = mapItem(schema.rest)
+    if (!rest.ok) {
+      return rest
+    }
+    return { ok: true, value: { additionalProperties: rest.value } } as const
   }
-  return {}
+  return { ok: true, value: {} } as const
 }
 
 /**
@@ -34,25 +38,38 @@ export function requiredKeysOf(schema: ObjectSchema) {
 
 /**
  * `v.object` / `v.looseObject` / `v.strictObject` / `v.objectWithRest`.
- *
- * @example
- * objectSchema(v.object({ id: v.string(), name: v.optional(v.string()) }), undefined, mapNullableType, mapItem)
- * // { type: 'object', properties: { id: { type: 'string' }, name: { type: 'string' } }, required: ['id'] }
  */
 export function objectSchema(
   schema: ObjectSchema,
   defaultValue: unknown,
   mapNullableType: MapNullableType,
   mapItem: MapSubSchema,
-): SchemaObject {
+) {
+  const properties = Object.entries(schema.entries).map(([key, entry]) => ({
+    key,
+    property: mapItem(entry),
+  }))
+  const failed = properties.find(({ property }) => !property.ok)
+  if (failed !== undefined && !failed.property.ok) {
+    return failed.property
+  }
+  const additional = additionalProperties(schema, mapItem)
+  if (!additional.ok) {
+    return additional
+  }
   const required = requiredKeysOf(schema)
   return {
-    ...mapNullableType('object'),
-    properties: mapValues(schema.entries, mapItem),
-    default: defaultValue,
-    ...(required.length > 0 ? { required } : {}),
-    ...additionalProperties(schema, mapItem),
-  }
+    ok: true,
+    value: {
+      ...mapNullableType('object'),
+      properties: Object.fromEntries(
+        properties.flatMap(({ key, property }) => (property.ok ? [[key, property.value]] : [])),
+      ),
+      default: defaultValue,
+      ...(required.length > 0 ? { required } : {}),
+      ...additional.value,
+    },
+  } as const
 }
 
 /**
@@ -63,17 +80,26 @@ export function recordSchema(
   schema: SchemaOf<'record'>,
   mapNullableType: MapNullableType,
   mapItem: MapSubSchema,
-): SchemaObject {
+) {
   const valueSchema = mapItem(schema.value)
+  if (!valueSchema.ok) {
+    return valueSchema
+  }
   if (isSchemaType(schema.key, ['picklist', 'enum'])) {
     const keys = schema.key.options.filter(isString)
     return {
-      ...mapNullableType('object'),
-      properties: Object.fromEntries(keys.map((key) => [key, valueSchema])),
-    }
+      ok: true,
+      value: {
+        ...mapNullableType('object'),
+        properties: Object.fromEntries(keys.map((key) => [key, valueSchema.value])),
+      },
+    } as const
   }
   return {
-    ...mapNullableType('object'),
-    additionalProperties: valueSchema,
-  }
+    ok: true,
+    value: {
+      ...mapNullableType('object'),
+      additionalProperties: valueSchema.value,
+    },
+  } as const
 }
