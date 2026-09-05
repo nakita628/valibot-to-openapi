@@ -1,7 +1,6 @@
 /**
- * OpenAPI 3.0 / 3.1 / 3.2 object model, defined from the specification without openapi3-ts.
- * Short names (`Schema`, `PathItem`, ...),
- * `readonly` everywhere, `$ref` carried by `Reference` / `Schema` themselves. The shapes are a
+ * OpenAPI 3.0 / 3.1 / 3.2 object model, defined from the specification itself.
+ * Short names (`Schema`, `PathItem`, ...), `readonly` everywhere, `$ref` carried by `Reference` / `Schema` themselves. The shapes are a
  * superset of the three versions so one document type covers every output the generator emits.
  *
  * @see https://spec.openapis.org/oas/v3.2.0.html

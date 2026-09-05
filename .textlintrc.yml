@@ -13,7 +13,7 @@ rules:
   terminology:
     defaultTerms: true
     # Project terms are added one at a time, each verified against a real run. `valibot`,
-    # `openapi` and `zod` are lowercase package names as often as they are prose nouns, so a
+    # `openapi` and `oxlint` are lowercase package names as often as they are prose nouns, so a
     # bare term for them would fight the package name on every line; "Open API" as two words
     # is never a package name, which is what makes it safe to enforce.
     terms:

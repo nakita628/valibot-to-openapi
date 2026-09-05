@@ -45,7 +45,7 @@ describe('root entry', () => {
     expect(v.ValiError).toBe(valibot.ValiError)
   })
 
-  it('reproduces the zod-to-openapi example document', () => {
+  it('reproduces the README example document', () => {
     const registry = new OpenAPIRegistry()
     const UserIdSchema = registry.registerParameter(
       'UserId',

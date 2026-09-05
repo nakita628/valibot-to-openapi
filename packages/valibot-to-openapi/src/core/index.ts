@@ -165,8 +165,8 @@ export function createRegistry(parents?: readonly Registry[]): Registry {
 }
 
 /**
- * Class form of `createRegistry()`, mirroring zod-to-openapi's `OpenAPIRegistry`. Both forms
- * share the registry shape, so instances and `createRegistry()` results can be mixed as parents.
+ * Class form of `createRegistry()`. Both forms share the registry shape, so instances and
+ * `createRegistry()` results can be mixed as parents.
  */
 export class OpenAPIRegistry implements Registry {
   private readonly registry: Registry
@@ -205,8 +205,8 @@ export class OpenAPIRegistry implements Registry {
 }
 
 /**
- * Class form of `generateDocument()` / `generateComponents()` pinned to OpenAPI 3.0, mirroring
- * zod-to-openapi's generator of the same name. 3.0 emits `nullable: true` and drops webhooks.
+ * Class form of `generateDocument()` / `generateComponents()` pinned to OpenAPI 3.0. 3.0 emits
+ * `nullable: true` and drops webhooks.
  *
  * @example
  * new OpenApiGeneratorV3(registry.definitions).generateDocument({ openapi: '3.0.0', info })
