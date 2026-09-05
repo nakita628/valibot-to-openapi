@@ -24,7 +24,7 @@ import type {
   Type,
 } from '../openapi/index.js'
 
-// The object model lives in `openapi/index.ts` (hono-takibi style: `Schema`, `PathItem`, ...).
+// The object model lives in `openapi/index.ts` (short names: `Schema`, `PathItem`, ...).
 // The generator code keeps the upstream zod-to-openapi names, so they are aliased here.
 export type ReferenceObject = Reference
 export type SchemaObject = Schema

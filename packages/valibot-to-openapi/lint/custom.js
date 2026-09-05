@@ -1,7 +1,6 @@
 // Repo-specific convention plugin (an oxlint JS plugin using the alpha ESLint-compatible API).
 // It reads the meaning of a declaration from the AST, which a glob cannot express. The rules are
-// the structural subset of nakita628/hono-takibi's plugin this package can actually hold — the
-// Effect rules have no counterpart here, so they are absent rather than carried as dead weight:
+// the structural conventions this package holds itself to:
 //   custom/function-declaration a module-level function is a `function` declaration, not an
 //                              anonymous function bound to a const (an annotated const keeps its
 //                              contextual type and is allowed)

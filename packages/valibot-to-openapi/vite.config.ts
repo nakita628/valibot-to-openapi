@@ -191,9 +191,9 @@ export default defineConfig({
 
       // --- Hardening beyond the enabled categories -------------------------
       // Everything below sits in `pedantic` / `style` / `restriction` / `nursery`, which
-      // oxlint leaves off by default. The list mirrors the one in nakita628/hono-takibi;
-      // only rules reachable from this codebase are named, so class / enum / namespace /
-      // DOM / React rules are deliberately absent rather than enabled as dead weight.
+      // oxlint leaves off by default. Only rules reachable from this codebase are named, so
+      // class / enum / namespace / DOM / React rules are deliberately absent rather than
+      // enabled as dead weight.
 
       // Escape hatches out of the type system, and the unsound types that survive `strict`.
       'typescript/ban-ts-comment': 'error',

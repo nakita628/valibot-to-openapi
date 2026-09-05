@@ -5,9 +5,8 @@ name: release
 # the version is tagged, published (only if npm does not have it yet) and released. Nothing
 # happens for a push that does not change the version, and every job is safe to re-run.
 #
-# Same shape as nakita628/hono-takibi and nakita628/hekireki. Action versions are pinned to a
-# commit digest with the tag kept as a comment, the shape Renovate's
-# `helpers:pinGitHubActionDigests` maintains.
+# Action versions are pinned to a commit digest with the tag kept as a comment, the shape
+# Renovate's `helpers:pinGitHubActionDigests` maintains.
 
 on:
   workflow_run:
