@@ -1,8 +1,7 @@
 import type { GenericSchema } from 'valibot'
 
 import type { ValibotToOpenAPIError } from '../errors/index.js'
-import { transformSchema } from '../generator/index.js'
-import { mapRecursive } from '../generator/lazy.js'
+import { mapRecursive, transformSchema } from '../generator/index.js'
 import {
   applySchemaMetadata,
   buildSchemaMetadata,

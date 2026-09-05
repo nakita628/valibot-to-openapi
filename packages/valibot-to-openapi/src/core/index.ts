@@ -205,8 +205,11 @@ export class OpenAPIRegistry implements Registry {
 }
 
 /**
- * Class forms of `generateDocument()` / `generateComponents()` pinned to one OpenAPI version,
- * mirroring zod-to-openapi's `OpenApiGeneratorV3` / `V31`. `OpenApiGeneratorV32` covers 3.2.
+ * Class form of `generateDocument()` / `generateComponents()` pinned to OpenAPI 3.0, mirroring
+ * zod-to-openapi's generator of the same name. 3.0 emits `nullable: true` and drops webhooks.
+ *
+ * @example
+ * new OpenApiGeneratorV3(registry.definitions).generateDocument({ openapi: '3.0.0', info })
  */
 export class OpenApiGeneratorV3 {
   constructor(
@@ -223,6 +226,13 @@ export class OpenApiGeneratorV3 {
   }
 }
 
+/**
+ * The 3.1 flavour of `OpenApiGeneratorV3`: `type: [..., 'null']` instead of `nullable: true`,
+ * tuples as `prefixItems`, numeric `exclusiveMinimum` / `exclusiveMaximum`, and `webhooks`.
+ *
+ * @example
+ * new OpenApiGeneratorV31(registry.definitions).generateDocument({ openapi: '3.1.0', info })
+ */
 export class OpenApiGeneratorV31 {
   constructor(
     private readonly definitions: readonly Definition[],
@@ -238,6 +248,13 @@ export class OpenApiGeneratorV31 {
   }
 }
 
+/**
+ * The 3.2 flavour, generated like 3.1. It exists so `config.openapi` can be pinned to `'3.2.0'`
+ * at the type level; the extra 3.2 keywords are carried by the OpenAPI model, not the generator.
+ *
+ * @example
+ * new OpenApiGeneratorV32(registry.definitions).generateDocument({ openapi: '3.2.0', info })
+ */
 export class OpenApiGeneratorV32 {
   constructor(
     private readonly definitions: readonly Definition[],

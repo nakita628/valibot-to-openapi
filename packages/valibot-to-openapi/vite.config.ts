@@ -56,10 +56,50 @@ export default defineConfig({
       'custom/predicate-is-name': 'error',
       'custom/type-pascal-case': 'error',
       'custom/no-let': 'error',
-      // `@internal` and friends are modifiers, so their text belongs to the description;
-      // `check-tag-names` is what catches a tag that is merely misspelled.
+      // Doc comments. The `jsdoc` plugin is off by default and enables nothing on its own, so
+      // every rule is named here. Doc comments in this package are TSDoc: the type lives in the
+      // signature, never in the comment, which is why `require-param-type`, `require-returns-type`
+      // and `require-property-type` are deliberately left out — each one asks for the `{type}`
+      // TSDoc bans, and this package's whole point is that the signature is the type.
+      // `require-param` / `require-returns` are left out too: a one-line
+      // `/** JSON pointer to a component schema. */` over a self-describing signature is the
+      // house style, and those two would turn 103 doc blocks into `@param` boilerplate that
+      // restates what the reader can already see. What stays on is the shape of a block once
+      // someone writes one.
+      'jsdoc/check-access': 'error',
+      'jsdoc/check-property-names': 'error',
+      // The default vocabulary is JSDoc's and does not know the TSDoc-only tags, so a valid
+      // `@remarks` or `@typeParam` would be reported as a typo without this list.
+      'jsdoc/check-tag-names': [
+        'error',
+        {
+          definedTags: [
+            'alpha',
+            'beta',
+            'decorator',
+            'defaultValue',
+            'eventProperty',
+            'experimental',
+            'inheritDoc',
+            'label',
+            'packageDocumentation',
+            'privateRemarks',
+            'remarks',
+            'sealed',
+            'typeParam',
+            'virtual',
+          ],
+        },
+      ],
       'jsdoc/empty-tags': 'error',
-      'jsdoc/check-tag-names': 'error',
+      'jsdoc/implements-on-classes': 'error',
+      'jsdoc/no-defaults': 'error',
+      'jsdoc/require-param-description': 'error',
+      'jsdoc/require-param-name': 'error',
+      'jsdoc/require-property': 'error',
+      'jsdoc/require-property-description': 'error',
+      'jsdoc/require-property-name': 'error',
+      'jsdoc/require-returns-description': 'error',
       // Paired with `env: { node: true }` above, so a global resolves and a typo does not.
       'no-undef': 'error',
       eqeqeq: 'error',
@@ -370,9 +410,14 @@ export default defineConfig({
     //   utils / openapi / errors / guard (leaves) → types (re-exports the openapi model)
     //     → metadata / specifics
     //     → generator (per-schema-type transformers, pure)
-    //     → helper (composition with the generation context; inside helper the sub-layers are
-    //       one-way as well: schema → parameter → route → components, imported directly, never
-    //       through the barrel)
+    //     → helper (composition with the generation context; the sub-layers are one-way as
+    //       well: schema → parameter → route → components)
+    //
+    // One shape for every directory: `<dir>/index.ts` is the only entry an outside module names,
+    // and a directory with more than one file makes that entry a barrel (`export *`). Inside a
+    // directory the siblings name each other's files directly — routing them through the barrel
+    // collapses the one-way order into a cycle, which `import/no-cycle` reports, so the rule is
+    // stated per directory below.
     //     → core (public entry points)
     overrides: [
       {
@@ -452,6 +497,11 @@ export default defineConfig({
                   message:
                     'generator may only import utils, guard, types, errors, metadata, specifics',
                 },
+                {
+                  regex: '^\\./index(\\.js)?$',
+                  message:
+                    'inside a directory, import the sibling module directly: going through the barrel turns the one-way order into a cycle',
+                },
               ],
             },
           ],
@@ -472,7 +522,7 @@ export default defineConfig({
                 {
                   regex: '^\\./index(\\.js)?$',
                   message:
-                    'import helper modules directly, not via the helper/index.ts barrel (cycle risk)',
+                    'inside a directory, import the sibling module directly: going through the barrel turns the one-way order into a cycle',
                 },
               ],
             },

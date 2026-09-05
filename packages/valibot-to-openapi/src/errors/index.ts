@@ -28,10 +28,15 @@ export type ValibotToOpenAPIError =
 
 // The constructors below widen to the union on purpose: it is the documented contract, and the
 // bundled `.d.ts` cannot name the anonymous object types inference would produce instead.
+/** The catch-all error, for a failure that fits none of the three specific shapes. */
 export function valibotToOpenAPIError(message: string): ValibotToOpenAPIError {
   return { type: 'ValibotToOpenAPIError', message } as const
 }
 
+/**
+ * Two definitions claim the same key with different values — the same `refId` registered twice,
+ * or a route and a webhook writing the same path. `data` names the key and the values that clash.
+ */
 export function conflictError(
   message: string,
   data: { readonly key: string; readonly values: readonly unknown[] },
@@ -39,6 +44,11 @@ export function conflictError(
   return { type: 'ConflictError', message, data } as const
 }
 
+/**
+ * A parameter is missing a field OpenAPI requires (`name` or `in`), which only `openapi()`'s
+ * `param` field can supply. The route and location are filled in later by
+ * `enhanceMissingParametersError` as the error travels up.
+ */
 export function missingParameterDataError(data: {
   readonly paramName?: string
   readonly route?: string
@@ -52,6 +62,10 @@ export function missingParameterDataError(data: {
   } as const
 }
 
+/**
+ * A valibot schema type this generator has no mapping for. The way out is `openapi({ type })`,
+ * which short-circuits the generation for that schema.
+ */
 export function unknownSchemaTypeError(data: {
   readonly schemaName?: string
   readonly currentSchema: unknown
