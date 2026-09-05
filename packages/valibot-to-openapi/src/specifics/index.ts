@@ -10,6 +10,13 @@ import { isEqual, uniq } from '../utils/index.js'
 const NULL_TYPE_30 = { nullable: true } as const
 const NULL_TYPE_31 = { type: 'null' } as const
 
+const BOUNDS_V30: { readonly [K in NumberCheck['kind']]: (value: number) => NumberBounds } = {
+  min_value: (value) => ({ minimum: value }),
+  gt_value: (value) => ({ minimum: value, exclusiveMinimum: true }),
+  max_value: (value) => ({ maximum: value }),
+  lt_value: (value) => ({ maximum: value, exclusiveMaximum: true }),
+}
+
 /**
  * OpenAPI 3.0.x: `nullable: true`, boolean `exclusiveMinimum` / `exclusiveMaximum`, tuples as
  * `items` + `minItems` / `maxItems`.
@@ -39,11 +46,11 @@ export const specificsV30: VersionSpecifics = {
     ),
 }
 
-const BOUNDS_V30: { readonly [K in NumberCheck['kind']]: (value: number) => NumberBounds } = {
+const BOUNDS_V31: { readonly [K in NumberCheck['kind']]: (value: number) => NumberBounds } = {
   min_value: (value) => ({ minimum: value }),
-  gt_value: (value) => ({ minimum: value, exclusiveMinimum: true }),
+  gt_value: (value) => ({ exclusiveMinimum: value }),
   max_value: (value) => ({ maximum: value }),
-  lt_value: (value) => ({ maximum: value, exclusiveMaximum: true }),
+  lt_value: (value) => ({ exclusiveMaximum: value }),
 }
 
 /**
@@ -77,13 +84,6 @@ export const specificsV31: VersionSpecifics = {
     Object.fromEntries(
       checks.flatMap((check) => Object.entries(BOUNDS_V31[check.kind](check.value))),
     ),
-}
-
-const BOUNDS_V31: { readonly [K in NumberCheck['kind']]: (value: number) => NumberBounds } = {
-  min_value: (value) => ({ minimum: value }),
-  gt_value: (value) => ({ exclusiveMinimum: value }),
-  max_value: (value) => ({ maximum: value }),
-  lt_value: (value) => ({ exclusiveMaximum: value }),
 }
 
 /**

@@ -1,6 +1,7 @@
 // The `valibot` namespace is re-exported here, so `import * as v from 'valibot-to-openapi'`
 // gives `v.string()` / `v.pipe()` next to `v.openapi()` — metadata is attached the way
 // Valibot's own `v.metadata` / `v.title` / `v.description` are.
+// oxlint-disable-next-line import/export -- the resolver reads valibot's `require` condition, a CJS bundle with no static named exports; the `import` condition this build uses has 311 of them.
 export * from 'valibot'
 export {
   createRegistry,

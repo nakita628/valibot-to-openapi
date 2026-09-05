@@ -52,7 +52,7 @@ describe('primitives', () => {
             iso: v.pipe(v.string(), v.isoDateTime()),
             len: v.pipe(v.string(), v.minLength(1), v.maxLength(3)),
             exact: v.pipe(v.string(), v.length(2)),
-            re: v.pipe(v.string(), v.regex(/^a+$/)),
+            re: v.pipe(v.string(), v.regex(/^a+$/u)),
           }),
           v.openapi('S'),
         ),
