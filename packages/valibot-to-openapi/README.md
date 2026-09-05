@@ -151,3 +151,7 @@ The package has one entry point: `export * from 'valibot'` plus its own exports.
 - **Extending objects** (zod's `.extend()`): `v.intersect([Base, v.object({ extra: v.string() })])` emits `allOf: [{ $ref: '#/components/schemas/Base' }, { … }]` when `Base` is registered.
 - **`v.openapi()` infers its input type from the surrounding `v.pipe`.** Defined on its own (`const meta = v.openapi({ default: 1 })`) it falls back to `unknown`, so `default` / `example` are only type-checked inside the pipe.
 - `OpenAPIObjectConfigV30` / `V31` / `V32` narrow `config.openapi` to the version literals when you want the compiler to pin the version.
+
+## License
+
+Distributed under the MIT License. See [LICENSE](https://github.com/nakita628/valibot-to-openapi?tab=MIT-1-ov-file) for more information.
