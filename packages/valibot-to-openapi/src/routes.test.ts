@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import { createRegistry, generateComponents, generateDocument } from './index.js'
-import * as v from './valibot/index.js'
+import * as v from './index.js'
 
 const config = { openapi: '3.0.0', info: { title: 'API', version: '1.0.0' } } as const
 

@@ -15,7 +15,7 @@ export function mapRecursive(
   schema: SchemaObject | ReferenceObject,
   mapNullableType: MapNullableType,
   mapNullableRef: MapNullableRef,
-): SchemaObject | ReferenceObject {
+) {
   if (isReferenceObject(schema)) {
     return mapNullableRef(schema)
   }

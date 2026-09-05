@@ -10,11 +10,11 @@ npm install valibot-to-openapi valibot
 
 ## Quick Start
 
-`valibot-to-openapi/valibot` is the `valibot` namespace plus the `openapi` action, so metadata is attached the way Valibot's own `v.metadata` / `v.title` / `v.description` actions are:
+`valibot-to-openapi` re-exports the whole `valibot` namespace, so a single specifier covers the schemas, the `openapi` action and the generators. Metadata is attached the way Valibot's own `v.metadata` / `v.title` / `v.description` actions are:
 
 ```ts
 import { OpenApiGeneratorV3, OpenAPIRegistry } from 'valibot-to-openapi'
-import * as v from 'valibot-to-openapi/valibot'
+import * as v from 'valibot-to-openapi'
 
 const registry = new OpenAPIRegistry()
 
@@ -101,7 +101,7 @@ This is zod-to-openapi's README example with `v.pipe(..., v.openapi(…))` in pl
 
 ```ts
 import { createRegistry, generateDocument } from 'valibot-to-openapi'
-import * as v from 'valibot-to-openapi/valibot'
+import * as v from 'valibot-to-openapi'
 
 const registry = createRegistry()
 const User = registry.register('User', v.object({ name: v.pipe(v.string(), v.minLength(1)) }))
@@ -128,23 +128,23 @@ if (document.ok) {
 
 ## API
 
-| Export                                                                                            | Description                                                                                                                                                                                                                                                                                                                                 |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `v.openapi(metadata, options?)` / `v.openapi(refId, metadata?, options?)`                         | Metadata action for `v.pipe` (also exported as `openapi` from the root). `refId` registers the schema under `components.schemas`. `metadata` accepts SchemaObject keywords (`description`, `example`, `type`, `deprecated`, …) plus `param` (ParameterObject props). `options.unionPreferredType` selects `oneOf` / `anyOf` for that union. |
-| `new OpenAPIRegistry(parents?)` / `new OpenApiGeneratorV3(definitions, options?)` / `V31` / `V32` | Class forms of `createRegistry` / `generateDocument` / `generateComponents` with the zod-to-openapi signatures. Instances and `createRegistry()` results share the `Registry` type and can be mixed as parents.                                                                                                                             |
-| `createRegistry(parents?)`                                                                        | Returns `{ definitions, register, registerParameter, registerPath, registerWebhook, registerComponent }`. `register` / `registerParameter` return the schema wrapped with the `refId` and stay usable with `v.parse`.                                                                                                                       |
-| `generateDocument(definitions, config, options?)`                                                 | Full document as `{ ok: true, value }                                                                                                                                                                                                                                                                                                       | { ok: false, error }`; the version is taken from `config.openapi` (`3.0.x`→`nullable: true`, `3.1.x`/`3.2.0`→`type: [..., 'null']`+`webhooks`). Returns the package's own `OpenAPI`type (a 3.0 / 3.1 / 3.2 superset, modelled after hono-takibi's`src/openapi`: `OpenAPI`/`Components`/`PathItem`/`Operation`/`Parameter`/`Schema`/`Reference`, all `readonly`, `$ref`typed as`#/components/<kind>/<name>`). |
-| `generateComponents(definitions, config, options?)`                                               | Only `components`; `config.openapi` selects the version like `generateDocument`.                                                                                                                                                                                                                                                            |
-| `getOpenApiMetadata(schema)` / `getRefId(schema)`                                                 | Read the collected metadata of a schema.                                                                                                                                                                                                                                                                                                    |
-| `ValibotToOpenAPIError`                                                                           | Everything that can fail returns `{ ok: true, value }` or `{ ok: false, error }` inline — nothing is thrown and there is no named Result type. Errors are plain objects discriminated by `type` (`ConflictError`, `MissingParameterDataError`, `UnknownSchemaTypeError`, `ValibotToOpenAPIError`) with the next action in `message`.        |
+| Export                                                                                            | Description                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `v.openapi(metadata, options?)` / `v.openapi(refId, metadata?, options?)`                         | Metadata action for `v.pipe`, also exported as `openapi`. `refId` registers the schema under `components.schemas`. `metadata` accepts SchemaObject keywords (`description`, `example`, `type`, `deprecated`, …) plus `param` (ParameterObject props). `options.unionPreferredType` selects `oneOf` / `anyOf` for that union.         |
+| `new OpenAPIRegistry(parents?)` / `new OpenApiGeneratorV3(definitions, options?)` / `V31` / `V32` | Class forms of `createRegistry` / `generateDocument` / `generateComponents` with the zod-to-openapi signatures. Instances and `createRegistry()` results share the `Registry` type and can be mixed as parents.                                                                                                                      |
+| `createRegistry(parents?)`                                                                        | Returns `{ definitions, register, registerParameter, registerPath, registerWebhook, registerComponent }`. `register` / `registerParameter` return the schema wrapped with the `refId` and stay usable with `v.parse`.                                                                                                                |
+| `generateDocument(definitions, config, options?)`                                                 | Full document as `{ ok: true, value }                                                                                                                                                                                                                                                                                                | { ok: false, error }`; the version is taken from `config.openapi` (`3.0.x`→`nullable: true`, `3.1.x`/`3.2.0`→`type: [..., 'null']`+`webhooks`). Returns the package's own `OpenAPI`type (a 3.0 / 3.1 / 3.2 superset, modelled after hono-takibi's`src/openapi`: `OpenAPI`/`Components`/`PathItem`/`Operation`/`Parameter`/`Schema`/`Reference`, all `readonly`, `$ref`typed as`#/components/<kind>/<name>`). |
+| `generateComponents(definitions, config, options?)`                                               | Only `components`; `config.openapi` selects the version like `generateDocument`.                                                                                                                                                                                                                                                     |
+| `getOpenApiMetadata(schema)` / `getRefId(schema)`                                                 | Read the collected metadata of a schema.                                                                                                                                                                                                                                                                                             |
+| `ValibotToOpenAPIError`                                                                           | Everything that can fail returns `{ ok: true, value }` or `{ ok: false, error }` inline — nothing is thrown and there is no named Result type. Errors are plain objects discriminated by `type` (`ConflictError`, `MissingParameterDataError`, `UnknownSchemaTypeError`, `ValibotToOpenAPIError`) with the next action in `message`. |
 
 `options` for the generators: `{ unionPreferredType?: 'oneOf' | 'anyOf', sortComponents?: 'alphabetically' }`.
 
 Metadata is collected through nested `v.pipe` calls and through `v.optional` / `v.nullable` / … wrappers; Valibot's `v.title`, `v.description`, `v.examples` and `v.metadata` actions are honoured too.
 
-### About the `valibot` entry
+### About the single entry
 
-`valibot-to-openapi/valibot` is `export * from 'valibot'` plus the `openapi` action — tree-shakeable and identical to importing `valibot` and `openapi` separately (`import * as v from 'valibot'` + `import { openapi } from 'valibot-to-openapi'` keeps working). Valibot schemas are plain objects composed through `v.pipe` and carry no methods, so there is deliberately no `.openapi()` method: a Zod-style `extendZodWithOpenApi(z)` has no counterpart (ESM namespaces are frozen and there is no shared prototype to patch).
+The package has one entry point: `export * from 'valibot'` plus its own exports. It is side-effect free and tree-shakeable, so `import * as v from 'valibot-to-openapi'` costs no more than importing `valibot` separately (`import * as v from 'valibot'` + `import { openapi } from 'valibot-to-openapi'` keeps working). No name collides — `valibot` exports nothing this package also exports. Valibot schemas are plain objects composed through `v.pipe` and carry no methods, so there is deliberately no `.openapi()` method: a Zod-style `extendZodWithOpenApi(z)` has no counterpart (ESM namespaces are frozen and there is no shared prototype to patch).
 
 ### Tips
 

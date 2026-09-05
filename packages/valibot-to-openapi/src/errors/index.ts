@@ -26,6 +26,8 @@ export type ValibotToOpenAPIError =
       readonly data: { readonly schemaName?: string; readonly currentSchema: unknown }
     }
 
+// The constructors below widen to the union on purpose: it is the documented contract, and the
+// bundled `.d.ts` cannot name the anonymous object types inference would produce instead.
 export function valibotToOpenAPIError(message: string): ValibotToOpenAPIError {
   return { type: 'ValibotToOpenAPIError', message } as const
 }

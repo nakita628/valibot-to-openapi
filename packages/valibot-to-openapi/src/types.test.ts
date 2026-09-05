@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import { generateComponents, generateDocument } from './index.js'
-import * as v from './valibot/index.js'
+import * as v from './index.js'
 
 describe('primitives', () => {
   it('maps primitive schemas', () => {

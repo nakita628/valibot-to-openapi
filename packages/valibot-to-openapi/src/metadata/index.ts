@@ -48,7 +48,7 @@ export function openapi<TInput>(
   refOrMetadata: string | OpenAPIMetadata<TInput>,
   metadataOrOptions?: OpenAPIMetadata<TInput> & OpenApiOptions,
   options?: OpenApiOptions,
-): OpenapiAction<TInput> {
+) {
   const config =
     typeof refOrMetadata === 'string'
       ? { refId: refOrMetadata, metadata: metadataOrOptions ?? {}, options }
@@ -74,7 +74,7 @@ export type CollectedMetadata = {
 
 const EMPTY: CollectedMetadata = { metadata: {}, internal: {} }
 
-function mergeCollected(base: CollectedMetadata, override: CollectedMetadata): CollectedMetadata {
+function mergeCollected(base: CollectedMetadata, override: CollectedMetadata) {
   const param = { ...base.metadata.param, ...override.metadata.param }
   return {
     metadata: {
@@ -86,7 +86,7 @@ function mergeCollected(base: CollectedMetadata, override: CollectedMetadata): C
   }
 }
 
-function metadataOfAction(item: MetadataAction): CollectedMetadata {
+function metadataOfAction(item: MetadataAction) {
   if (isOpenapiAction(item)) {
     return {
       metadata: item.metadata,
@@ -118,7 +118,7 @@ function metadataOfAction(item: MetadataAction): CollectedMetadata {
 /**
  * Metadata declared directly on the schema's own pipe (not on wrapped schemas).
  */
-function ownMetadata(schema: GenericSchema): CollectedMetadata {
+function ownMetadata(schema: GenericSchema) {
   return flattenPipe(schema)
     .filter(isMetadataAction)
     .reduce((acc, item) => mergeCollected(acc, metadataOfAction(item)), EMPTY)
@@ -128,6 +128,7 @@ function ownMetadata(schema: GenericSchema): CollectedMetadata {
  * Collects the OpenAPI metadata of a schema, walking through `v.optional` / `v.nullable` / ...
  * wrappers. Metadata declared on an outer wrapper overrides the wrapped schema's.
  */
+// Recursive: without the annotation the return type resolves to `any`.
 export function collectMetadata(schema: GenericSchema): CollectedMetadata {
   const own = ownMetadata(schema)
   return isWrapper(schema) ? mergeCollected(collectMetadata(schema.wrapped), own) : own
@@ -136,14 +137,14 @@ export function collectMetadata(schema: GenericSchema): CollectedMetadata {
 /**
  * The OpenAPI metadata of a schema with `undefined` values dropped.
  */
-export function getOpenApiMetadata(schema: GenericSchema): FullMetadata {
+export function getOpenApiMetadata(schema: GenericSchema) {
   return omitBy(collectMetadata(schema).metadata, isUndefined)
 }
 
 /**
  * The library-internal metadata (`refId`, `unionPreferredType`).
  */
-export function getInternalMetadata(schema: GenericSchema): InternalMetadata {
+export function getInternalMetadata(schema: GenericSchema) {
   return collectMetadata(schema).internal
 }
 
@@ -158,7 +159,7 @@ export function getRefId(schema: GenericSchema) {
  * Metadata for parameter generation: a `description` from `openapi()` is taken with lower
  * precedence than one from `param.description`.
  */
-export function getParamMetadata(schema: GenericSchema): FullMetadata {
+export function getParamMetadata(schema: GenericSchema) {
   const metadata = collectMetadata(schema).metadata
   return {
     ...metadata,
@@ -189,6 +190,6 @@ export function buildParameterMetadata(metadata: NonNullable<OpenAPIMetadata['pa
 export function applySchemaMetadata(
   initialData: SchemaObject | ReferenceObject,
   metadata: FullMetadata,
-): SchemaObject {
+) {
   return omitBy({ ...initialData, ...buildSchemaMetadata(metadata) }, isUndefined)
 }

@@ -5,7 +5,6 @@ import { isSchemaType } from '../guard/index.js'
 import { getInternalMetadata, getRefId } from '../metadata/index.js'
 import { unwrapNullable } from '../pipe/index.js'
 import type {
-  DiscriminatorObject,
   MapNullableOfArray,
   MapSubSchema,
   ReferenceObject,
@@ -16,6 +15,7 @@ import { isString } from '../utils/index.js'
 
 // `undefined` has no JSON representation: a union member of `v.undefined()` only marks the
 // value as omittable, which `required` already expresses.
+// Recursive: without the annotation the return type resolves to `any`.
 function flattenUnionOptions(schema: GenericSchema): readonly GenericSchema[] {
   if (isSchemaType(schema, 'union')) {
     return schema.options.flatMap(flattenUnionOptions)
@@ -47,6 +47,7 @@ export function unionSchema(
   return { ok: true, value: { [key]: schemas } } as const
 }
 
+// Recursive: without the annotation the return type resolves to `any`.
 function discriminatorValues(schema: GenericSchema, key: string): readonly string[] {
   if (isSchemaType(schema, ['object', 'loose_object', 'strict_object', 'object_with_rest'])) {
     const value = schema.entries[key]
@@ -71,7 +72,7 @@ function discriminatorMapping(
   options: readonly GenericSchema[],
   key: string,
   generateSchemaRef: (refId: string) => string,
-): DiscriminatorObject | undefined {
+) {
   const refIds = options.map(getRefId)
   // All schemas must be registered to use a discriminator
   if (refIds.some((refId) => refId === undefined)) {
@@ -121,6 +122,7 @@ export function variantSchema(
   } as const
 }
 
+// Recursive: without the annotation the return type resolves to `any`.
 function flattenIntersectOptions(schema: GenericSchema): readonly GenericSchema[] {
   return isSchemaType(schema, 'intersect')
     ? schema.options.flatMap(flattenIntersectOptions)

@@ -9,7 +9,6 @@ import type {
   ComponentTypeKey,
   ComponentTypeOf,
   Definition,
-  GenerationContext,
   GeneratorOptions,
   OpenAPIDefinition,
   OpenAPIObject,
@@ -29,10 +28,7 @@ export type OpenAPIObjectConfigV32 = OpenAPIObjectConfig & {
   readonly openapi: '3.2.0'
 }
 
-function createContext(
-  specifics: VersionSpecifics,
-  options: GeneratorOptions | undefined,
-): GenerationContext {
+function createContext(specifics: VersionSpecifics, options: GeneratorOptions | undefined) {
   return {
     specifics,
     options,
@@ -134,6 +130,7 @@ export type Registry = {
  * const User = registry.register('User', v.object({ name: v.string() }))
  * registry.registerPath({ method: 'get', path: '/users', responses: { 200: { description: 'OK', content: { 'application/json': { schema: v.array(User) } } } } })
  */
+// The return type is what contextually types the parameters of the returned methods.
 export function createRegistry(parents?: readonly Registry[]): Registry {
   const own: OpenAPIDefinition[] = []
   return {

@@ -1,6 +1,5 @@
 import { isSchema } from '../guard/index.js'
 import type {
-  ComponentsObject,
   ComponentTypeKey,
   Definition,
   GenerationContext,
@@ -32,7 +31,7 @@ function generationIndex(definition: Definition) {
  * Orders definitions so schemas are generated before the parameters / routes that reference
  * them. The sort is stable, so registration order is preserved within each group.
  */
-export function sortDefinitions(definitions: readonly Definition[]): readonly Definition[] {
+export function sortDefinitions(definitions: readonly Definition[]) {
   return definitions.toSorted((left, right) => generationIndex(left) - generationIndex(right))
 }
 
@@ -72,7 +71,7 @@ function rawComponentsOf<T extends OpenAPIComponentObject>(
   ctx: GenerationContext,
   componentType: ComponentTypeKey,
   guard: (value: OpenAPIComponentObject) => value is T,
-): { readonly [name: string]: T } {
+) {
   return Object.fromEntries(
     ctx.rawComponents
       .filter((raw) => raw.componentType === componentType)
@@ -80,7 +79,7 @@ function rawComponentsOf<T extends OpenAPIComponentObject>(
   )
 }
 
-function buildComponents(ctx: GenerationContext): ComponentsObject {
+function buildComponents(ctx: GenerationContext) {
   const rawComponents = Object.fromEntries(
     [...new Set(ctx.rawComponents.map((raw) => raw.componentType))].map((componentType) => [
       componentType,

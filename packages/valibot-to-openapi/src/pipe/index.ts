@@ -19,6 +19,7 @@ import {
  * flattenPipe(v.pipe(v.pipe(v.string(), v.minLength(1)), v.maxLength(5)))
  * // [minLengthAction, maxLengthAction]
  */
+// Recursive: without the annotation the return type resolves to `any`.
 export function flattenPipe(schema: GenericSchema): readonly PipeItem[] {
   if (!isPiped(schema)) {
     return []
@@ -31,7 +32,7 @@ export function flattenPipe(schema: GenericSchema): readonly PipeItem[] {
  * before the first transformation. Validations after a transformation constrain the transformed
  * value, which is not what the OpenAPI document describes.
  */
-export function inputValidations(schema: GenericSchema): readonly ValidationAction[] {
+export function inputValidations(schema: GenericSchema) {
   const items = flattenPipe(schema)
   const transformIndex = items.findIndex(isTransformationAction)
   const inputItems = transformIndex === -1 ? items : items.slice(0, transformIndex)
@@ -73,6 +74,7 @@ export function isWrapper(
  * Strips every wrapper (`v.optional`, `v.nullable`, ...) and returns the innermost schema.
  * `v.pipe` wrappers are transparent because a piped schema keeps the `type` of its first entry.
  */
+// Recursive: without the annotation the return type resolves to `any`.
 export function unwrapChained(schema: GenericSchema): GenericSchema {
   return isWrapper(schema) ? unwrapChained(schema.wrapped) : schema
 }
@@ -80,6 +82,7 @@ export function unwrapChained(schema: GenericSchema): GenericSchema {
 /**
  * Strips only `v.nullable` / `v.nullish` wrappers.
  */
+// Recursive: without the annotation the return type resolves to `any`.
 export function unwrapNullable(schema: GenericSchema): GenericSchema {
   return isSchemaType(schema, ['nullable', 'nullish']) ? unwrapNullable(schema.wrapped) : schema
 }
@@ -88,7 +91,7 @@ function isDefaultFactory(value: unknown): value is () => unknown {
   return typeof value === 'function'
 }
 
-function resolveDefault(value: unknown): unknown {
+function resolveDefault(value: unknown) {
   return isDefaultFactory(value) ? value() : value
 }
 
@@ -98,7 +101,7 @@ function resolveDefault(value: unknown): unknown {
  * @example
  * getDefaultValue(v.optional(v.string(), 'x')) // 'x'
  */
-export function getDefaultValue(schema: GenericSchema): unknown {
+export function getDefaultValue(schema: GenericSchema) {
   if (!isWrapper(schema)) {
     return undefined
   }

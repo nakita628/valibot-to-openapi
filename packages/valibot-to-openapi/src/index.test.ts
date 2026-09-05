@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import { createRegistry, generateComponents, generateDocument } from './index.js'
-import * as v from './valibot/index.js'
+import * as v from './index.js'
 
 describe('smoke', () => {
   it('generates a component schema with nested refs, nullable and defaults', () => {

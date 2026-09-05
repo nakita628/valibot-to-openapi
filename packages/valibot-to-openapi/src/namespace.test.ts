@@ -1,10 +1,10 @@
 import * as valibot from 'valibot'
 import { describe, expect, it } from 'vite-plus/test'
 
-import { getOpenApiMetadata, getRefId, OpenApiGeneratorV3, OpenAPIRegistry } from '../index.js'
+import { getOpenApiMetadata, getRefId, OpenApiGeneratorV3, OpenAPIRegistry } from './index.js'
 import * as v from './index.js'
 
-describe('valibot entry', () => {
+describe('root entry', () => {
   it('exposes openapi as a pipe action next to v.metadata (valibot idiom)', () => {
     const Id = v.pipe(v.string(), v.uuid(), v.openapi({ description: 'The id' }))
     expect(getOpenApiMetadata(Id)).toStrictEqual({ description: 'The id' })

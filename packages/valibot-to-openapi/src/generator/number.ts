@@ -4,7 +4,7 @@ import type { ValidationAction } from '../guard/index.js'
 import { findValidation, hasValidation, inputValidations } from '../pipe/index.js'
 import type { MapNullableType, NumberBounds, NumberCheck } from '../types/index.js'
 
-function numberChecks(validations: readonly ValidationAction[]): readonly NumberCheck[] {
+function numberChecks(validations: readonly ValidationAction[]) {
   return validations.flatMap<NumberCheck>((action) => {
     const value =
       typeof action.requirement === 'number' || typeof action.requirement === 'bigint'

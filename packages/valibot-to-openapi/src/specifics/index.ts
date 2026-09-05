@@ -93,6 +93,6 @@ const BOUNDS_V31: { readonly [K in NumberCheck['kind']]: (value: number) => Numb
  * specificsFor('3.0.3') // specificsV30
  * specificsFor('3.1.0') // specificsV31
  */
-export function specificsFor(version: string): VersionSpecifics {
+export function specificsFor(version: string) {
   return version.startsWith('3.0') ? specificsV30 : specificsV31
 }

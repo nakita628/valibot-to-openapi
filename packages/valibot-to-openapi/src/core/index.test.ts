@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import * as v from '../valibot/index.js'
+import * as v from '../index.js'
 import {
   createRegistry,
   generateComponents,

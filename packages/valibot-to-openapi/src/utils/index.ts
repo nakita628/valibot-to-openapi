@@ -48,6 +48,7 @@ export function compact<T>(values: readonly (T | undefined)[]) {
  * @example
  * isEqual({ a: [1] }, { a: [1] }) // true
  */
+// Recursive: without the annotation the return type resolves to `any`.
 export function isEqual(x: unknown, y: unknown): boolean {
   if (x === y) {
     return true
@@ -111,6 +112,8 @@ export function enumInfo(values: readonly unknown[]) {
   return { values: [...values], type }
 }
 
+// The three `*Ref` helpers spell out their template literal return type on purpose: inference
+// widens a template literal expression to `string`, which no longer fits the `$ref` model type.
 /**
  * JSON pointer to a component schema.
  *

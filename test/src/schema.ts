@@ -1,4 +1,4 @@
-import * as v from 'valibot-to-openapi/valibot'
+import * as v from 'valibot-to-openapi'
 
 export const User = v.pipe(
   v.object({

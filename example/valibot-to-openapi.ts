@@ -6,7 +6,7 @@ import {
   // OpenApiGeneratorV31
   OpenAPIRegistry,
 } from 'valibot-to-openapi'
-import * as v from 'valibot-to-openapi/valibot'
+import * as v from 'valibot-to-openapi'
 import * as yaml from 'yaml'
 
 const registry = new OpenAPIRegistry()

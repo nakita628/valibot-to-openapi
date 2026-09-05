@@ -1,3 +1,7 @@
+// The `valibot` namespace is re-exported here, so `import * as v from 'valibot-to-openapi'`
+// gives `v.string()` / `v.pipe()` next to `v.openapi()` — metadata is attached the way
+// Valibot's own `v.metadata` / `v.title` / `v.description` are.
+export * from 'valibot'
 export {
   createRegistry,
   generateComponents,
