@@ -1,1 +1,1 @@
-# valibot-to-openapi
+packages/valibot-to-openapi/README.md
