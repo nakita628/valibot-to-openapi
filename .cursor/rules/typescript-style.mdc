@@ -1,0 +1,70 @@
+---
+description: House TypeScript style for every workspace — declaration shape, immutability, imports, comments
+globs: **/*.ts
+---
+
+# TypeScript style
+
+Formatting is not your job: `vp fmt` (oxfmt) owns it, configured once in the root
+`vite.config.ts` — 100 columns, single quotes, no semicolons, sorted imports, sorted
+`package.json`. Write code in the shape below and let the formatter place it.
+
+## Declarations
+
+- Module-level functions are `function` declarations, not an anonymous function bound to a
+  `const`. Enforced by `custom/function-declaration`. The exception the rule allows is a `const`
+  that carries a type annotation, because the annotation supplies a contextual type.
+- A function whose every `return` yields a boolean is a predicate and must be named `isX`,
+  `hasX` or `canX`. Enforced by `custom/predicate-is-name`.
+- Types are `type` aliases in PascalCase, never `interface`
+  (`typescript/consistent-type-definitions: 'type'`, `custom/type-pascal-case`).
+- No `let` outside a `for` head (`custom/no-let`). Express the value as one `const` — a ternary
+  over the deciding condition, or an extracted function.
+- Do not write return types. Let inference do it. Annotate only when a recursive function would
+  otherwise resolve to `any`, and then leave the one-line comment the existing code uses:
+  `// Recursive: without the annotation the return type resolves to \`any\`.`
+
+## Types
+
+- No `any` and no type assertions in `src`. `assertionStyle` is `never`, so `x as T` and
+  `<T>x` both fail; `satisfies` and a real type guard are the way through.
+- No non-null assertions (`x!`). `noUncheckedIndexedAccess` is on, so an index access is
+  `T | undefined` and you must narrow it.
+- Object and array types in the public surface are `readonly`. The OpenAPI model in
+  `src/openapi` is entirely readonly and that is deliberate.
+- `import type` for type-only imports (`typescript/consistent-type-imports`), and type-only
+  specifiers stay in their own `import type` statement.
+
+## Values and control flow
+
+- `const` everywhere, object spread over mutation, `Object.hasOwn` over `hasOwnProperty`.
+- Guard clauses over nesting. `curly` is `multi-line`, so `if (!x) return null` on one line is
+  legal and a wrapped body must be braced.
+- Prefer `??` to `||` for defaults (`typescript/prefer-nullish-coalescing`), `?.` for chained
+  access, template literals over concatenation.
+- `switch` over a union must be exhaustive (`typescript/switch-exhaustiveness-check`).
+- No `console` in `packages/valibot-to-openapi` (it is a library). `test` and `example` are
+  scripts and print on purpose, so `no-console` is off there only.
+
+## Imports and module graph
+
+- ESM only. Relative specifiers **always** carry the `.js` extension
+  (`import { foo } from '../utils/index.js'`), which NodeNext requires at runtime and `tsc`
+  does not check for you. In `test` / `example`, source files import each other with `.ts`.
+- No default exports anywhere except a Vite config and the oxlint plugin, each of which already
+  carries a scoped `oxlint-disable-next-line import/no-default-export` with its reason.
+- No `require`, no CommonJS, no import cycles (`import/no-cycle`).
+- No `node:` imports in `packages/valibot-to-openapi` — the library must run in a browser or a
+  worker. `node/no-top-level-await` guards the same boundary. `scripts`, `test` and `example`
+  are Node programs and may import `node:*`.
+
+## Comments
+
+- Doc comments are TSDoc and describe *why*, never the type — the signature is the type. Do not
+  add `@param`/`@returns` boilerplate that restates the signature; a one-line
+  `/** JSON pointer to a component schema. */` is the house style. `@example` is welcome on a
+  public function.
+- No `TODO` / `FIXME` comments (`no-warning-comments`). Parked work belongs in an issue.
+- A lint exception lives next to the code as
+  `// oxlint-disable-next-line <rule> -- <why>`, never as `'off'` in the config. It must name
+  the single rule it silences and state the reason.

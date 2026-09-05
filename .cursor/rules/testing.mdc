@@ -1,0 +1,77 @@
+---
+description: Vitest conventions for unit tests and the end-to-end generation workspace
+globs: **/*.test.ts
+---
+
+# Testing
+
+Tests run through vite-plus: `vp run -r test` at the root, `vp test` inside a package. Coverage
+is `@vitest/coverage-v8` over `src/**/*.ts`.
+
+## Where a test goes
+
+- `src/<layer>/index.test.ts` — unit tests for one layer (`utils`, `metadata`, `core`).
+- `src/schemas.test.ts` — a valibot schema in, a component out. This is where support for a
+  schema type or a validation is proven, per OpenAPI version when the versions differ.
+- `src/routes.test.ts` — `registerPath` / `registerWebhook` and the generated paths.
+- `src/definitions.test.ts` — registry bookkeeping, conflicts, parents.
+- `src/types.test.ts` — type-level expectations.
+- `src/namespace.test.ts` / `src/index.test.ts` — the public entry: the valibot re-export stays
+  complete and collision-free.
+
+## Shape
+
+```ts
+import { describe, expect, it } from 'vite-plus/test'
+
+import { generateComponents } from './index.js'
+import * as v from './index.js'
+```
+
+- Import the test API from `vite-plus/test`, not from `vitest`.
+- Import the code under test through the package entry (`./index.js`) or the layer barrel, the
+  way a user would.
+- `describe` names the behavior area in lowercase prose (`nullability per version`, `unions`);
+  `it` completes the sentence (`it('flattens nested unions')`). No `test()` — `consistent-test-it`
+  is enforced.
+- `toStrictEqual` over `toEqual` (`vitest/prefer-strict-equal`), and assert on the whole
+  generated object rather than probing one key.
+- Table-driven cases use `it.each` (`vitest/prefer-each`) rather than a hand-rolled loop.
+- Snapshots are discouraged and must stay small and literal — `no-large-snapshots` and
+  `no-interpolation-in-snapshots` are on.
+- No `it.only`, no `it.skip`, no commented-out tests. Every `it` must assert.
+
+## What tests may do that `src` may not
+
+`**/*.test.ts` relaxes exactly the rules that exist to police casts and structure: `any`, type
+assertions, `let`, a `let` fixture assigned in a hook, empty stub callbacks, imperative
+arrangement, and cross-layer imports. Everything else still applies. Use the freedom to spell a
+fixture out clearly, not to skip narrowing a result.
+
+## Asserting on results
+
+Nothing throws, so assert on the discriminant:
+
+```ts
+const result = generateComponents(registry.definitions, { openapi: '3.1.0' })
+expect(result.ok).toBe(true)
+if (result.ok) {
+  expect(result.value.schemas?.User).toStrictEqual({ type: 'object', ... })
+}
+```
+
+Test the failure path too: assert `ok` is `false` and match on `error.type`, plus `error.data`
+where it carries the useful detail.
+
+## End-to-end check
+
+`test/src/schema.ts` + `test/src/generate.ts` build a realistic document for 3.0, 3.1 and 3.2 and
+write it to `test/out/` (gitignored):
+
+```bash
+vp run generate
+```
+
+Run it after any change to the generator or the version specifics and read the YAML. It is the
+fastest way to see that a change is right in aggregate, and `example/valibot-to-openapi.ts` is
+the same idea at README scale.

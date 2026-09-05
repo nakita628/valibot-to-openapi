@@ -1,0 +1,59 @@
+---
+description: Markdown, prose and spelling rules for README and other documentation
+globs: **/*.md
+---
+
+# Documentation
+
+Three linters share the work and never overlap: **markdownlint** owns document structure,
+**textlint** owns the prose, **cspell** owns the individual words. `vp run lint` runs all three;
+`vp run fix` auto-fixes what is fixable.
+
+## The README is the API reference
+
+`packages/valibot-to-openapi/README.md` is the published README and the only API document.
+The root `README.md` is a symlink to it — edit the file under `packages/`.
+
+- Every public export appears as a row in the API table with a one-sentence description.
+- Every code sample must compile against the current API. If you change a signature, change the
+  sample.
+- Samples show the result convention honestly: generation returns
+  `{ ok: true, value } | { ok: false, error }` and the sample checks `ok` before using `value`.
+- Keep the existing voice: short, factual, no marketing.
+
+## Structure (markdownlint)
+
+Config: `.markdownlint-cli2.jsonc`. Every default rule is on; the three exceptions are
+documented in the file with their reasons.
+
+- Every fenced block declares a language, from the closed list:
+  `ts`, `tsx`, `js`, `json`, `jsonc`, `yaml`, `yml`, `bash`, `sh`, `text`, `diff`, `md`.
+  Use `ts` — never `typescript`, which is not allowed and would split the highlighting.
+- Ordered lists count `1.` `2.` `3.`.
+- Sibling headings must be unique; the same heading under a different parent is fine.
+- Line length is not checked (the API table cannot wrap), but keep prose reasonable.
+
+## Prose (textlint)
+
+Config: `.textlintrc.yml`. Docs are English; the Japanese presets are deliberately absent.
+
+- `terminology` enforces canonical spellings: JavaScript, TypeScript, npm, GitHub, JSON, macOS,
+  and `OpenAPI` (never "Open API"). Code spans and fenced blocks are skipped, so
+  `valibot-to-openapi` and `v.openapi()` are safe.
+- `README` and `re-export` are deliberate exceptions to the default term list.
+- Unbalanced quotes, brackets and parentheses are an error — usually the sign of a truncated edit.
+- No `TODO` in the docs.
+- A genuine exception is a `<!-- textlint-disable rule-name -->` comment next to the sentence
+  that needs it, never a config change.
+
+## Spelling (cspell)
+
+Config: `cspell.config.yaml`, checking **every** file in the repository, code included — a typo
+inside a fenced block is still a typo, because readers copy those blocks.
+
+- A word cspell does not know goes into `project-words.txt`: one per line, sorted, lowercase
+  unless the casing is the point.
+- Only add a word that really recurs, and only after confirming it is not a typo. Adding a typo
+  here is how the check stops working.
+- `allowCompoundWords` is off, but camelCase and snake_case are split, so `unionPreferredType`
+  is checked as three words and needs no entry.

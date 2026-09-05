@@ -12,6 +12,7 @@ pipefail
 rhysd
 sapegin
 textlint
+textlintrc
 undefinedable
 ValiError
 voidzero

@@ -1,0 +1,67 @@
+---
+description: CI workflows, publishing and how a release is cut
+globs: .github/**,packages/valibot-to-openapi/package.json,renovate.json,scripts/*.ts
+---
+
+# CI and release
+
+## Test workflow
+
+`.github/workflows/test.yml` runs on every push to `main` and every pull request, executing the
+same commands a developer runs locally, in the same order:
+
+```bash
+vp install --frozen-lockfile
+vp run --filter ./packages/valibot-to-openapi build
+vp run -r test
+vp run check
+vp run lint
+```
+
+If it is green locally it is green in CI. Do not add a CI-only step that has no local equivalent.
+
+## Release workflow
+
+`.github/workflows/release.yml` is driven entirely by the `version` field of
+`packages/valibot-to-openapi/package.json`:
+
+1. Bump `version` on `main`.
+2. Test runs; on success the release workflow triggers via `workflow_run`.
+3. It tags `v<version>`, publishes to npm with provenance (trusted publishing on the `release`
+   environment), and creates a GitHub release with generated notes.
+
+A push that does not change the version does nothing, and every job is safe to re-run.
+
+- Bumping the version **is** cutting a release. Only do it when explicitly asked.
+- Never create the `v*` tag or the GitHub release by hand; the workflow owns both.
+- `files` is `["dist"]` — only the build output ships. Anything a consumer needs must be emitted
+  into `dist` by `vp pack`.
+- The public surface is the single `.` export in `exports`, typed by `dist/index.d.ts`. Adding an
+  entry point is a design decision, not a fix.
+
+## Action pinning
+
+Every action is pinned to a commit digest with the tag kept as a trailing comment, the shape
+`helpers:pinGitHubActionDigests` maintains:
+
+```yaml
+- uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+```
+
+Never replace a digest with a floating tag — that is a mutable dependency with write access to
+the job. Renovate updates these; action digest bumps are deliberately not auto-merged.
+
+## Workflow lint
+
+`vp run lint:actions` runs `scripts/actionlint.ts`, which downloads a checksum-pinned actionlint
+release for the current platform, verifies it, caches it under `node_modules/.cache` and runs it.
+Bumping actionlint means updating `VERSION` **and** every entry of `CHECKSUMS` together, taken
+from that release's `*_checksums.txt`. Repository-specific actionlint settings live in
+`.github/actionlint.yaml`.
+
+## Renovate
+
+`renovate.json` schedules updates for Saturdays (Asia/Tokyo) with a 7-day minimum release age.
+Minor, patch and digest updates of non-zero-major dependencies auto-merge; major updates, and
+GitHub Action digests, do not. Do not bump dependency versions by hand inside an unrelated
+change — let Renovate open its pull request.

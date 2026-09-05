@@ -1,0 +1,82 @@
+---
+alwaysApply: true
+---
+
+# How to make a change here
+
+This repository is meant to be operated entirely through an agent conversation. Work in
+complete units: read, change, verify, report. Do not hand back a change you have not run.
+
+## 1. Read before writing
+
+- The configuration files carry the reasoning: `vite.config.ts` in each workspace explains why
+  every lint rule is on or deliberately absent, and `packages/valibot-to-openapi/lint/custom.js`
+  spells out the structural conventions. Read the comment before you argue with the rule.
+- Find the layer your change belongs to (see `library-architecture`) and read that directory's
+  `index.ts` first.
+- Prefer extending an existing function over adding a parallel one. The generator is a set of
+  small pure transformers; a new schema type usually means one new branch, not one new file.
+
+## 2. Change
+
+- Keep the diff to what was asked. Do not reformat, re-sort or "tidy" untouched code — `vp fmt`
+  owns formatting and will disagree with you.
+- Update `packages/valibot-to-openapi/README.md` in the same change whenever the public API,
+  its types or its behavior move. The README is the API reference; a change that leaves it
+  stale is unfinished.
+- Add or extend a test in the same change. A behavior change with no test does not land.
+
+## 3. Verify — the gate
+
+Run these from the repository root, in this order, and only report success when all pass:
+
+```bash
+vp run --filter ./packages/valibot-to-openapi build
+vp run -r test
+vp run check
+vp run lint
+```
+
+- `build` first: `test` and `example` resolve the library through `dist`, and the type-aware
+  lint in `check` needs the emitted declarations.
+- `vp run fix` auto-fixes formatting, Markdown, prose and the fixable lint rules. Run it before
+  `check` if the failures are mechanical, then re-run the gate.
+- Never make a check pass by weakening it: not by disabling a rule in `vite.config.ts`, not by
+  adding a word to `project-words.txt` that is actually a typo, not by deleting an assertion.
+- If a test that was already failing before your change blocks you, say so explicitly and show
+  the output rather than working around it.
+
+## 4. Report
+
+State what changed, what you ran, and what the result was. If part of the request is
+unfinished or was intentionally left out, say which part and why.
+
+## Git policy
+
+- Do **not** commit, amend, push, or create a branch, tag or pull request unless you are
+  explicitly asked to. Leave the change in the working tree so it can be reviewed.
+- When a commit is explicitly requested, keep it to one logical change with a subject line in
+  the style of the existing history (`fix README.md and lint`, `add README.md`).
+- Never edit `pnpm-lock.yaml` by hand; let `vp install` write it.
+- Never touch `.github/workflows/release.yml` as a side effect of another task.
+
+## Dependencies
+
+- The library ships with **no** runtime dependencies beyond the `valibot` peer dependency.
+  Adding one to `packages/valibot-to-openapi/package.json` is a design decision, not a fix —
+  ask first.
+- Dev dependency versions are managed by Renovate (`renovate.json`); do not bump them by hand
+  as part of an unrelated change.
+- `@types/node` and `yaml` in `test` / `example` are fine to use; they never reach the package.
+
+## Troubleshooting
+
+- **`vp check` reports an unused disable directive** — `reportUnusedDisableDirectives` is
+  `deny`. The rule stopped firing, so delete the `oxlint-disable` comment with it.
+- **`test` or `example` cannot resolve `valibot-to-openapi`** — you skipped the build step.
+- **`vp install` fails with `ESTALE` / errno `-116`** (containerized or network filesystems):
+  rerun as `vp install -- --config.package-import-method=copy`. It is a transient filesystem
+  error and each run gets further, so repeat it until it completes rather than deleting
+  `node_modules`.
+- **actionlint downloads on first run** — `scripts/actionlint.ts` fetches a checksum-pinned
+  release into `node_modules/.cache`. Offline, `vp run lint:actions` is the only check that fails.

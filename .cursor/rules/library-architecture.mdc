@@ -1,0 +1,101 @@
+---
+description: Layering, barrels, the result convention and the error model inside packages/valibot-to-openapi/src
+globs: packages/valibot-to-openapi/src/**/*.ts
+---
+
+# Library architecture
+
+## One-way layering
+
+Dependency direction is one-way and enforced by `no-restricted-imports` overrides in
+`packages/valibot-to-openapi/vite.config.ts`. Each directory may import only the layers below it:
+
+```text
+utils · openapi · errors · guard      leaves: no project-internal imports at all
+        ↓
+types                                 may import openapi, errors
+        ↓
+pipe                                  reads v.pipe chains; builds on guard
+        ↓
+metadata · specifics                  metadata: utils, guard, types, pipe
+                                      specifics: utils, types, pipe
+        ↓
+generator                             utils, guard, types, errors, metadata, specifics, pipe
+        ↓
+helper                                everything except core
+                                      (internally one-way: schema → parameter → route → components)
+        ↓
+core                                  the public entry points
+        ↓
+index.ts                              the package entry
+```
+
+If a change needs an import the layer forbids, the design is wrong, not the rule. Move the
+shared piece down into a lower layer instead of widening the override.
+
+## Barrels
+
+- `<dir>/index.ts` is the only entry a module outside that directory ever names.
+- A directory with more than one file makes that entry a barrel of `export *` lines
+  (`generator/index.ts`, `helper/index.ts`).
+- **Inside** a directory, siblings import each other's files directly
+  (`import { schemaObject } from './schema.js'`), never through `./index.js`. Going through the
+  barrel turns the one-way order into a cycle and `import/no-cycle` will say so.
+- A new public export must be re-exported from `src/index.ts`, with values and types in the
+  separate `export` / `export type` blocks already there, and documented in the README API table.
+
+## Nothing throws
+
+Every fallible function returns an inline discriminated result:
+
+```ts
+if (!result.ok) {
+  return result
+}
+// result.value is narrowed here
+return { ok: true, value: schema } as const
+```
+
+- Do **not** introduce a named `Result<T, E>` type, a helper like `ok()` / `err()`, or a class.
+  The literal `{ ok, value }` / `{ ok, error }` shape with `as const` at the return site is the
+  convention, and the return type stays inferred.
+- Propagate a failure by returning it unchanged; only the layer that can add context rewrites it
+  (`enhanceMissingParametersError` is the one place that does).
+- An infallible transformer returns its value directly. Do not wrap something that cannot fail.
+- `throw` is not used anywhere. The rules that keep a throw honest (`no-throw-literal`,
+  `unicorn/error-message`, `typescript/only-throw-error`) stay on so the first one that ever
+  appears has to carry a real `Error` — that is not an invitation to add one.
+
+## Errors
+
+`src/errors/index.ts` holds one union, `ValibotToOpenAPIError`, discriminated by `type`:
+`ValibotToOpenAPIError`, `ConflictError`, `MissingParameterDataError`, `UnknownSchemaTypeError`.
+
+- Errors are plain frozen-shaped objects built by the exported constructor functions, never
+  classes and never thrown.
+- `message` must state the **next action** the user should take, not just what went wrong.
+- The constructors deliberately widen their return to the union: the bundled `.d.ts` cannot name
+  the anonymous object types inference would otherwise produce. Keep the explicit return type.
+- Adding a member means: extend the union, add a constructor with a TSDoc block explaining when
+  it fires, export both from `src/index.ts`, and add a row to the README.
+
+## Reading valibot schemas
+
+- `src/guard` holds structural views over valibot's schema objects — narrower than valibot's own
+  generics, carrying only the fields the generator reads. Widen a view there rather than
+  asserting at a call site.
+- `isSchemaType(schema, 'union')` / `isSchemaType(schema, ['object', 'loose_object', ...])` is
+  how a schema is narrowed. Never compare `schema.type` by hand.
+- `src/pipe` is the only place that walks a `v.pipe` chain. Metadata collection, wrapper
+  unwrapping (`optional` / `nullable` / `nullish` / …) and default extraction live there.
+
+## Supporting a new schema type or validation
+
+1. Add the structural view to `SchemaTypes` in `src/guard/index.ts`.
+2. Add the transformer to the matching file in `src/generator` (or a new file plus a barrel line).
+3. Wire it into `transformSchema` in `src/generator/transform.ts`, the single dispatch over
+   schema types. An unmatched type falls through to `unknownSchemaTypeError`.
+4. If 3.0 and 3.1/3.2 disagree about the output, put the difference behind `VersionSpecifics` in
+   `src/specifics` — never behind a version check inside a generator.
+5. Cover it in `src/schemas.test.ts` for every OpenAPI version the behavior differs in.
+6. Document it in the README if it is user-visible.

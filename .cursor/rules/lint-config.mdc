@@ -1,0 +1,60 @@
+---
+description: Rules for touching the lint, format and oxlint plugin configuration
+globs: **/vite.config.ts,packages/valibot-to-openapi/lint/*.js,cspell.config.yaml,.textlintrc.yml,.markdownlint-cli2.jsonc,project-words.txt
+---
+
+# Changing the lint and format configuration
+
+The configuration is strict by design and every choice is commented where it is made. Treat it
+as source code with an audience: the comment must explain *why*, so the next reader does not
+have to rediscover it.
+
+## Do not weaken a check to make code pass
+
+- A failing rule means the code is wrong. Fix the code.
+- Never switch a rule to `'off'` in `vite.config.ts` to unblock yourself. The exception mechanism
+  is a `// oxlint-disable-next-line <rule> -- <why>` comment at the line that needs it.
+- `reportUnusedDisableDirectives` is `deny`: when a rule stops firing, the disable comment must
+  be deleted with it.
+- `denyWarnings` is on, so nothing is configured as a warning. A rule is an error or it is absent.
+- A rule that genuinely does not fit this codebase is left **out of the list**, with a comment
+  where it would have gone explaining why (see `no-implicit-coercion` in the package config).
+
+## Where each thing lives
+
+| Concern                                   | File                                                |
+| ----------------------------------------- | --------------------------------------------------- |
+| Formatting for the whole workspace        | root `vite.config.ts` → `fmt`                        |
+| Library lint, build and test config       | `packages/valibot-to-openapi/vite.config.ts`         |
+| Structural conventions a glob cannot express | `packages/valibot-to-openapi/lint/custom.js`      |
+| Script-workspace lint                     | `test/vite.config.ts`, `example/vite.config.ts`      |
+| Markdown structure / prose / spelling     | `.markdownlint-cli2.jsonc`, `.textlintrc.yml`, `cspell.config.yaml` |
+| Secrets, workflow lint                    | `.secretlintrc.json`, `scripts/actionlint.ts`        |
+
+Formatting options live **only** in the root config; workspaces inherit them and declare nothing
+but their `ignorePatterns`. `test/vite.config.ts` and `example/vite.config.ts` hold the same rule
+list minus the library-internal rules — when you change one of them, change the other to match.
+
+## The oxlint plugin
+
+`packages/valibot-to-openapi/lint/custom.js` implements four repo conventions:
+`custom/function-declaration`, `custom/predicate-is-name`, `custom/type-pascal-case`,
+`custom/no-let`. It is an oxlint JS plugin using the alpha ESLint-compatible API — untyped
+ESTree in, a default export out, which is why `lint/**` has its own override turning off the
+`no-unsafe-*` and default-export rules.
+
+When adding a rule there:
+
+- Report a message that tells the author what to write instead, in the voice of the existing
+  four — a sentence, not a rule name.
+- Exempt `*.test.ts` if the rule describes the shape of `src` rather than a real hazard.
+- Add it to the rules list in `vite.config.ts` under `custom/`, and to the header comment in
+  `custom.js` that summarizes what the plugin enforces.
+- Prove it: write code that should trip it, run `vp check`, and confirm the rule fires and the
+  rest of the repository still passes.
+
+## Architecture overrides
+
+The `no-restricted-imports` overrides in `packages/valibot-to-openapi/vite.config.ts` encode the
+one-way layer order. Widening one is a design change: move the shared code down a layer instead.
+The `message` on each pattern must keep naming exactly which layers that directory may import.
