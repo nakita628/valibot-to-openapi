@@ -37,3 +37,7 @@ jobs:
       - run: vp run -r test
 
       - run: vp run check
+
+      # markdownlint, textlint, cspell, secretlint and actionlint over the docs, configs and
+      # this workflow — the same single command as locally.
+      - run: vp run lint
