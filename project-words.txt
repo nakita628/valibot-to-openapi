@@ -8,9 +8,9 @@ nakita
 omittable
 picklist
 picklists
+pipefail
 rhysd
 sapegin
-takibi
 textlint
 undefinedable
 ValiError
