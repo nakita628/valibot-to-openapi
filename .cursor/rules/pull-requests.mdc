@@ -1,0 +1,88 @@
+---
+description: How a change lands — from an issue to a merged pull request: branch, title, the Why/What/Where/Who/When/How body, and what has to be green first
+alwaysApply: true
+---
+
+# Pull requests
+
+This repository is operated by an agent, not by hand. The issue, the diff and the pull
+request body are the whole record of a change, so each one is written for a reader who was
+not in the conversation.
+
+## From an issue
+
+1. Read the issue as **Why / What / Where / How**. When a section is missing and the answer
+   would change the work, ask in the issue first; otherwise state the assumption in the pull
+   request body.
+2. Reproduce before fixing: a failing case in `src/schemas.test.ts` (or the test file of the
+   layer) that shows the bug or the missing behavior, per OpenAPI version when they differ.
+3. Branch from `main`, named `type/topic` (`fix/nullable-union`, `feat/lazy-refs`). Never
+   commit to `main` — a version bump there publishes to npm.
+4. One topic per pull request. A generator fix and a README rewrite are two pull requests.
+
+## The title is the changelog
+
+`.github/workflows/release.yml` cuts each GitHub Release with
+`gh release create --generate-notes`, and those notes are the **titles of the pull
+requests merged since the previous release**. Write the title for someone reading the
+releases page, not for the diff:
+
+```text
+type(scope): summary in the imperative, no trailing period
+
+type   feat | fix | perf | refactor | docs | test | build | ci | chore
+scope  generator | pipe | metadata | specifics | core | helper | types | errors | docs | ci
+```
+
+```text
+fix(generator): emit nullable unions as oneOf with null on 3.0
+feat(metadata): honour v.title() as the schema title
+docs: show the result check in every README sample
+```
+
+## Body
+
+Fill in `.github/pull_request_template.md`. Keep all six headings, replace each comment
+with the answer, and write `None.` under a heading that does not apply rather than
+deleting it. One to three sentences per heading.
+
+| Heading | Answer                                                                        |
+| ------- | ----------------------------------------------------------------------------- |
+| Why     | the bug, gap or request; `Closes #123`                                        |
+| What    | the change as a user of the package sees it                                   |
+| Where   | the layers and OpenAPI versions touched — and what was left out               |
+| Who     | who notices: every user, one version's users, contributors; breaking for whom |
+| When    | release impact: none, next release, or the version bumped in this change      |
+| How     | the approach, then the evidence: the gate below, and the generated YAML       |
+
+When a generator or `src/specifics` changed, run `vp run generate` and paste the relevant
+part of `test/out/*.yaml`: the aggregate output is the fastest way to see that a change is
+right, and a reviewer cannot run it from the diff alone.
+
+## Green before you open it
+
+```bash
+vp run --filter ./packages/valibot-to-openapi build
+vp run -r test
+vp run check
+vp run lint
+```
+
+Tick a box in the template only for a command that ran and passed. A command that failed
+is pasted, not hidden, and a pull request is not opened over a red gate.
+
+## A version bump is a release
+
+`release.yml` tags `v<version>`, publishes to npm and creates the GitHub release as soon
+as `main` carries a version of `packages/valibot-to-openapi/package.json` that is not on
+the registry. Bumping that version **is** the release — never include a bump in a pull
+request that was not asked to publish one.
+
+## Opening it
+
+```bash
+gh pr create --base main --title 'fix(generator): …' --body-file <file>
+```
+
+Where `gh` is not available, open the pull request through the platform's own step with
+the same title and body.

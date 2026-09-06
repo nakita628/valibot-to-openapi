@@ -53,10 +53,13 @@ unfinished or was intentionally left out, say which part and why.
 
 ## Git policy
 
-- Do **not** commit, amend, push, or create a branch, tag or pull request unless you are
-  explicitly asked to. Leave the change in the working tree so it can be reviewed.
-- When a commit is explicitly requested, keep it to one logical change with a subject line in
-  the style of the existing history (`fix README.md and lint`, `add README.md`).
+- Every change lands through a pull request: branch from `main` as `type/topic`, commit,
+  push, and open the pull request with the template filled in. See the `pull-requests` rule
+  for the title format, the body and the gate. Never commit to `main` directly.
+- Commit messages follow the same `type(scope): summary` shape as pull request titles, and a
+  commit is one logical change.
+- Never bump `version` in `packages/valibot-to-openapi/package.json` unless the task is a
+  release: the bump is what publishes to npm.
 - Never edit `pnpm-lock.yaml` by hand; let `vp install` write it.
 - Never touch `.github/workflows/release.yml` as a side effect of another task.
 
