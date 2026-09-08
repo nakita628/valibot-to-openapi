@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { createRegistry, generateDocument } from './index.js'
+import { OpenAPIRegistry, generateDocument } from './index.js'
 import * as v from './index.js'
 
 const config = { openapi: '3.0.0', info: { title: 'API', version: '1.0.0' } } as const
@@ -65,7 +65,7 @@ describe('parameters', () => {
   })
 
   it('reports a registered parameter used under a different key', () => {
-    const registry = createRegistry()
+    const registry = OpenAPIRegistry()
     const P = registry.registerParameter(
       'P',
       v.pipe(v.string(), v.openapi({ param: { name: 'p', in: 'query' } })),
@@ -88,7 +88,7 @@ describe('parameters', () => {
   })
 
   it('accepts request headers as a single object schema', () => {
-    const registry = createRegistry()
+    const registry = OpenAPIRegistry()
     registry.registerPath({
       method: 'get',
       path: '/h',

@@ -1,3 +1,4 @@
+import { collectEntries } from '../errors/index.js'
 import type { SchemaOf } from '../guard/index.js'
 import { isSchemaType } from '../guard/index.js'
 import { isOptionalSchema } from '../pipe/index.js'
@@ -45,13 +46,11 @@ export function objectSchema(
   mapNullableType: MapNullableType,
   mapItem: MapSubSchema,
 ) {
-  const properties = Object.entries(schema.entries).map(([key, entry]) => ({
-    key,
-    property: mapItem(entry),
-  }))
-  const failed = properties.find(({ property }) => !property.ok)
-  if (failed !== undefined && !failed.property.ok) {
-    return failed.property
+  const properties = collectEntries(
+    Object.entries(schema.entries).map(([key, entry]) => [key, mapItem(entry)] as const),
+  )
+  if (!properties.ok) {
+    return properties
   }
   const additional = additionalProperties(schema, mapItem)
   if (!additional.ok) {
@@ -62,9 +61,7 @@ export function objectSchema(
     ok: true,
     value: {
       ...mapNullableType('object'),
-      properties: Object.fromEntries(
-        properties.flatMap(({ key, property }) => (property.ok ? [[key, property.value]] : [])),
-      ),
+      properties: properties.value,
       default: defaultValue,
       ...(required.length > 0 ? { required } : {}),
       ...additional.value,

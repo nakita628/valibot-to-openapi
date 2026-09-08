@@ -1,6 +1,6 @@
 import type { GenericSchema } from 'valibot'
 
-import { conflictError, missingParameterDataError } from '../errors/index.js'
+import { collect, conflictError, missingParameterDataError } from '../errors/index.js'
 import { isSchemaType, OBJECT_TYPES } from '../guard/index.js'
 import {
   buildParameterMetadata,
@@ -10,7 +10,12 @@ import {
   getRefId,
 } from '../metadata/index.js'
 import { isNullableSchema, isOptionalSchema } from '../pipe/index.js'
-import type { GenerationContext, ParameterLocation } from '../types/index.js'
+import type {
+  GenerationContext,
+  ParameterLocation,
+  ParameterObject,
+  ReferenceObject,
+} from '../types/index.js'
 import { compact, parameterRef } from '../utils/index.js'
 import { generateSchemaWithRef } from './schema.js'
 
@@ -159,47 +164,45 @@ export function generateInlineParameters(
   }
 
   if (isSchemaType(schema, OBJECT_TYPES)) {
-    const entries = Object.entries(schema.entries).map(([key, entry]) => {
-      const innerParameterMetadata = getOpenApiMetadata(entry).param
-      const referencedEntry = getParameterRef(ctx, entry, { in: location, name: key })
-      if (!referencedEntry.ok) {
-        return referencedEntry
-      }
+    const entries = collect<ParameterObject | ReferenceObject>(
+      Object.entries(schema.entries).map(([key, entry]) => {
+        const innerParameterMetadata = getOpenApiMetadata(entry).param
+        const referencedEntry = getParameterRef(ctx, entry, { in: location, name: key })
+        if (!referencedEntry.ok) {
+          return referencedEntry
+        }
 
-      if (referencedEntry.value) {
-        return { ok: true, value: referencedEntry.value } as const
-      }
+        if (referencedEntry.value) {
+          return { ok: true, value: referencedEntry.value } as const
+        }
 
-      if (innerParameterMetadata?.name && innerParameterMetadata.name !== key) {
-        return {
-          ok: false,
-          error: conflictError(
-            'Conflicting names for parameter. Use the same key in the route object and in `openapi({ param: { name } })`',
-            { key: 'name', values: [key, innerParameterMetadata.name] },
-          ),
-        } as const
-      }
+        if (innerParameterMetadata?.name && innerParameterMetadata.name !== key) {
+          return {
+            ok: false,
+            error: conflictError(
+              'Conflicting names for parameter. Use the same key in the route object and in `openapi({ param: { name } })`',
+              { key: 'name', values: [key, innerParameterMetadata.name] },
+            ),
+          } as const
+        }
 
-      if (innerParameterMetadata?.in && innerParameterMetadata.in !== location) {
-        return {
-          ok: false,
-          error: conflictError(
-            `Conflicting location for parameter ${innerParameterMetadata.name ?? key}. Use the same \`in\` in the route request and in \`openapi({ param: { in } })\``,
-            { key: 'in', values: [location, innerParameterMetadata.in] },
-          ),
-        } as const
-      }
+        if (innerParameterMetadata?.in && innerParameterMetadata.in !== location) {
+          return {
+            ok: false,
+            error: conflictError(
+              `Conflicting location for parameter ${innerParameterMetadata.name ?? key}. Use the same \`in\` in the route request and in \`openapi({ param: { in } })\``,
+              { key: 'in', values: [location, innerParameterMetadata.in] },
+            ),
+          } as const
+        }
 
-      return generateParameter(ctx, entry, { name: key, in: location })
-    })
-    const failed = entries.find((entry) => !entry.ok)
-    if (failed !== undefined && !failed.ok) {
-      return failed
+        return generateParameter(ctx, entry, { name: key, in: location })
+      }),
+    )
+    if (!entries.ok) {
+      return entries
     }
-    return {
-      ok: true,
-      value: entries.flatMap((entry) => (entry.ok ? [entry.value] : [])),
-    } as const
+    return { ok: true, value: [...entries.value] } as const
   }
 
   if (parameterMetadata?.in && parameterMetadata.in !== location) {

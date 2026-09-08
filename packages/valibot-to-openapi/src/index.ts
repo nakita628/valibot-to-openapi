@@ -3,22 +3,8 @@
 // Valibot's own `v.metadata` / `v.title` / `v.description` are.
 // oxlint-disable-next-line import/export -- the resolver reads valibot's `require` condition, a CJS bundle with no static named exports; the `import` condition this build uses has 311 of them.
 export * from 'valibot'
-export {
-  createRegistry,
-  generateComponents,
-  generateDocument,
-  OpenAPIRegistry,
-  OpenApiGeneratorV3,
-  OpenApiGeneratorV31,
-  OpenApiGeneratorV32,
-} from './core/index.js'
-export type {
-  OpenAPIObjectConfig,
-  OpenAPIObjectConfigV30,
-  OpenAPIObjectConfigV31,
-  OpenAPIObjectConfigV32,
-  Registry,
-} from './core/index.js'
+export { OpenAPIRegistry, generateComponents, generateDocument } from './core/index.js'
+export type { OpenAPIObjectConfig, Registry } from './core/index.js'
 export {
   conflictError,
   enhanceMissingParametersError,

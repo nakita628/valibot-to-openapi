@@ -3,8 +3,6 @@ import type { GenericSchema } from 'valibot'
 import type { ValibotToOpenAPIError } from '../errors/index.js'
 import type {
   Callbacks,
-  Components,
-  Content,
   Discriminator,
   Encoding,
   Example,
@@ -30,14 +28,10 @@ export type ReferenceObject = Reference
 export type SchemaObject = Schema
 export type SchemaObjectType = Type
 export type ParameterObject = Parameter
-export type BaseParameterObject = Header
-export type HeadersObject = { readonly [k: string]: Header | Reference }
 export type MediaTypeObject = Media
-export type ContentObject = Content
-export type RequestBodyObject = RequestBody
 export type ResponseObject = Responses
+export type HeadersObject = { readonly [k: string]: Header | Reference }
 export type PathItemObject = PathItem
-export type ComponentsObject = Components
 export type OpenAPIObject = OpenAPI
 export type DiscriminatorObject = Discriminator
 export type ParameterLocation = Exclude<Parameter['in'], 'querystring'>

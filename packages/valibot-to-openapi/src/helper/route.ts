@@ -1,14 +1,17 @@
 import type { GenericSchema } from 'valibot'
 
-import { enhanceMissingParametersError } from '../errors/index.js'
+import { collect, collectEntries, enhanceMissingParametersError } from '../errors/index.js'
 import { isSchema, isSchemaType, OBJECT_TYPES } from '../guard/index.js'
 import type {
   ContentConfig,
   GenerationContext,
   MediaTypeConfig,
+  MediaTypeObject,
+  ParameterObject,
   ReferenceObject,
   RequestBodyConfig,
   ResponseConfig,
+  ResponseObject,
   RouteConfig,
 } from '../types/index.js'
 import { isReferenceObject } from '../utils/index.js'
@@ -49,24 +52,22 @@ function getParameters(ctx: GenerationContext, request: RouteConfig['request'] |
     } as const
   }
   const headerSchemas = headers === undefined ? [] : isSchema(headers) ? [headers] : headers
-  const headerResults = headerSchemas.map((header) =>
-    generateInlineParameters(ctx, header, 'header'),
+  const headerResults = collect<readonly (ParameterObject | ReferenceObject)[]>(
+    headerSchemas.map((header) => generateInlineParameters(ctx, header, 'header')),
   )
-  const failedHeader = headerResults.find((result) => !result.ok)
-  if (failedHeader !== undefined && !failedHeader.ok) {
+  if (!headerResults.ok) {
     return {
       ok: false,
-      error: enhanceMissingParametersError(failedHeader.error, { location: 'header' }),
+      error: enhanceMissingParametersError(headerResults.error, { location: 'header' }),
     } as const
   }
-  const headerParameters = headerResults.flatMap((result) => (result.ok ? result.value : []))
 
   return {
     ok: true,
     value: [
       ...pathParameters.value,
       ...queryParameters.value,
-      ...headerParameters,
+      ...headerResults.value.flat(),
       ...cookieParameters.value,
     ],
   } as const
@@ -102,19 +103,11 @@ function getMediaType(ctx: GenerationContext, config: MediaTypeConfig | Referenc
 }
 
 function getBodyContent(ctx: GenerationContext, content: ContentConfig) {
-  const entries = Object.entries(content).flatMap(([mediaType, config]) =>
-    config === undefined ? [] : [{ mediaType, media: getMediaType(ctx, config) }],
-  )
-  const failed = entries.find(({ media }) => !media.ok)
-  if (failed !== undefined && !failed.media.ok) {
-    return failed.media
-  }
-  return {
-    ok: true,
-    value: Object.fromEntries(
-      entries.flatMap(({ mediaType, media }) => (media.ok ? [[mediaType, media.value]] : [])),
+  return collectEntries<MediaTypeObject | ReferenceObject>(
+    Object.entries(content).flatMap(([mediaType, config]) =>
+      config === undefined ? [] : [[mediaType, getMediaType(ctx, config)] as const],
     ),
-  } as const
+  )
 }
 
 function getRequestBody(ctx: GenerationContext, requestBody: RequestBodyConfig | undefined) {
@@ -133,20 +126,11 @@ function getResponseHeaders(ctx: GenerationContext, headers: GenericSchema) {
   if (!isSchemaType(headers, OBJECT_TYPES)) {
     return { ok: true, value: {} } as const
   }
-  const entries = Object.entries(headers.entries).map(([name, entry]) => ({
-    name,
-    parameter: generateSimpleParameter(ctx, entry),
-  }))
-  const failed = entries.find(({ parameter }) => !parameter.ok)
-  if (failed !== undefined && !failed.parameter.ok) {
-    return failed.parameter
-  }
-  return {
-    ok: true,
-    value: Object.fromEntries(
-      entries.flatMap(({ name, parameter }) => (parameter.ok ? [[name, parameter.value]] : [])),
+  return collectEntries(
+    Object.entries(headers.entries).map(
+      ([name, entry]) => [name, generateSimpleParameter(ctx, entry)] as const,
     ),
-  } as const
+  )
 }
 
 function getResponse(ctx: GenerationContext, response: ResponseConfig | ReferenceObject) {
@@ -178,13 +162,13 @@ function getResponse(ctx: GenerationContext, response: ResponseConfig | Referenc
  */
 export function generatePath(ctx: GenerationContext, route: RouteConfig) {
   const { method, path, request, responses, ...pathItemConfig } = route
-  const responseEntries = Object.entries(responses).map(([statusCode, response]) => ({
-    statusCode,
-    response: getResponse(ctx, response),
-  }))
-  const failedResponse = responseEntries.find(({ response }) => !response.ok)
-  if (failedResponse !== undefined && !failedResponse.response.ok) {
-    return failedResponse.response
+  const responseEntries = collectEntries<ResponseObject | ReferenceObject>(
+    Object.entries(responses).map(
+      ([statusCode, response]) => [statusCode, getResponse(ctx, response)] as const,
+    ),
+  )
+  if (!responseEntries.ok) {
+    return responseEntries
   }
   const parameters = getParameters(ctx, request)
   if (!parameters.ok) {
@@ -206,11 +190,7 @@ export function generatePath(ctx: GenerationContext, route: RouteConfig) {
           ? { parameters: [...(pathItemConfig.parameters ?? []), ...parameters.value] }
           : {}),
         ...(requestBody.value ? { requestBody: requestBody.value } : {}),
-        responses: Object.fromEntries(
-          responseEntries.flatMap(({ statusCode, response }) =>
-            response.ok ? [[statusCode, response.value]] : [],
-          ),
-        ),
+        responses: responseEntries.value,
       },
     },
   } as const

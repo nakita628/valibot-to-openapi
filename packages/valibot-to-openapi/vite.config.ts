@@ -355,7 +355,10 @@ export default defineConfig({
       'no-empty': 'error',
       'no-empty-function': 'error',
       'unicode-bom': 'error',
-      'new-cap': 'error',
+      // `OpenAPIRegistry` is a plain function named after what it returns, and `new` is not
+      // part of its contract. Naming it as the one exception keeps the rule on everywhere
+      // else, where a capitalized call really is a missing `new`.
+      'new-cap': ['error', { capIsNewExceptions: ['OpenAPIRegistry'] }],
       // A parked TODO is debt that belongs in an issue, not in the source.
       'no-warning-comments': 'error',
       // A `${...}` inside a single-quoted string is almost always a template literal that

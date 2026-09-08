@@ -118,9 +118,9 @@ export function enumInfo(values: readonly unknown[]) {
  * @example
  * schemaRef('User') // '#/components/schemas/User'
  */
-// The one `*Ref` helper that spells its template literal type out: inference widens a template
-// literal expression to `string`, which no longer fits the `$ref` model type. Its two siblings
-// feed no such field, so they stay inferred.
+// `schemaRef` and `parameterRef` spell their template literal type out: inference widens a
+// template literal expression to `string`, which no longer fits the `$ref` model type.
+// `componentRef` feeds no such field, so it stays inferred.
 export function schemaRef(refId: string): `#/components/schemas/${string}` {
   return `#/components/schemas/${refId}`
 }
@@ -131,7 +131,7 @@ export function schemaRef(refId: string): `#/components/schemas/${string}` {
  * @example
  * parameterRef('Id') // '#/components/parameters/Id'
  */
-export function parameterRef(refId: string) {
+export function parameterRef(refId: string): `#/components/parameters/${string}` {
   return `#/components/parameters/${refId}`
 }
 

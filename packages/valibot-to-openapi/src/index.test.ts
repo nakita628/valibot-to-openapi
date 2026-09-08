@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { createRegistry, generateComponents, generateDocument } from './index.js'
+import { OpenAPIRegistry, generateComponents, generateDocument } from './index.js'
 import * as v from './index.js'
 
 describe('smoke', () => {
@@ -39,7 +39,7 @@ describe('smoke', () => {
   })
 
   it('generates a 3.1 document with paths and webhooks', () => {
-    const registry = createRegistry()
+    const registry = OpenAPIRegistry()
     const User = registry.register('User', v.object({ name: v.string() }))
     registry.registerPath({
       method: 'get',

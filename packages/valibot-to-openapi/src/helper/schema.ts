@@ -2,23 +2,31 @@ import type { GenericSchema } from 'valibot'
 
 import type { ValibotToOpenAPIError } from '../errors/index.js'
 import { mapRecursive, transformSchema } from '../generator/index.js'
-import {
-  applySchemaMetadata,
-  buildSchemaMetadata,
-  getOpenApiMetadata,
-  getRefId,
-} from '../metadata/index.js'
+import { applySchemaMetadata, buildSchemaMetadata, collectMetadata } from '../metadata/index.js'
 import { getDefaultValue, isNullableSchema, unwrapChained } from '../pipe/index.js'
 import type { GenerationContext, ReferenceObject, SchemaObject } from '../types/index.js'
-import { isEqual, omitBy, schemaRef } from '../utils/index.js'
+import { isEqual, isUndefined, omitBy, schemaRef } from '../utils/index.js'
 
-function toOpenAPISchema(
-  ctx: GenerationContext,
-  schema: GenericSchema,
-  isNullable: boolean,
-  defaultValue: unknown,
-) {
-  return transformSchema(schema, isNullable, defaultValue, {
+/**
+ * Everything the generator reads from one schema. Walking the pipe and the wrappers is the
+ * expensive part of a generation, so it is done once here and threaded through the three
+ * generation steps instead of being recomputed by each of them.
+ */
+function schemaInfo(schema: GenericSchema) {
+  const collected = collectMetadata(schema)
+  return {
+    inner: unwrapChained(schema),
+    metadata: omitBy(collected.metadata, isUndefined),
+    refId: collected.internal.refId,
+    defaultValue: getDefaultValue(schema),
+    isNullable: isNullableSchema(schema),
+  }
+}
+
+type SchemaInfo = ReturnType<typeof schemaInfo>
+
+function toOpenAPISchema(ctx: GenerationContext, info: SchemaInfo) {
+  return transformSchema(info.inner, info.isNullable, info.defaultValue, {
     specifics: ctx.specifics,
     options: ctx.options,
     mapItem: (item) => generateSchemaWithRef(ctx, item),
@@ -26,11 +34,8 @@ function toOpenAPISchema(
   })
 }
 
-function generateSchemaWithMetadata(ctx: GenerationContext, schema: GenericSchema) {
-  const innerSchema = unwrapChained(schema)
-  const metadata = getOpenApiMetadata(schema)
-  const defaultValue = getDefaultValue(schema)
-  const refId = getRefId(schema)
+function generateSchemaWithMetadata(ctx: GenerationContext, info: SchemaInfo) {
+  const { metadata, refId, isNullable } = info
   const existing = refId === undefined ? undefined : ctx.schemaRefs.get(refId)
 
   if (typeof existing === 'object') {
@@ -41,7 +46,7 @@ function generateSchemaWithMetadata(ctx: GenerationContext, schema: GenericSchem
   if (existing === 'pending' && refId !== undefined) {
     return {
       ok: true,
-      value: ctx.specifics.mapNullableOfRef({ $ref: schemaRef(refId) }, isNullableSchema(schema)),
+      value: ctx.specifics.mapNullableOfRef({ $ref: schemaRef(refId) }, isNullable),
     } as const
   }
 
@@ -53,7 +58,7 @@ function generateSchemaWithMetadata(ctx: GenerationContext, schema: GenericSchem
 
   const result = metadata.type
     ? ({ ok: true, value: { type: metadata.type } } as const)
-    : toOpenAPISchema(ctx, innerSchema, isNullableSchema(schema), defaultValue)
+    : toOpenAPISchema(ctx, info)
 
   if (!result.ok) {
     return result
@@ -64,17 +69,13 @@ function generateSchemaWithMetadata(ctx: GenerationContext, schema: GenericSchem
 /**
  * Same as `generateSchemaWithMetadata` but applies nullability to an already referenced schema.
  */
-function constructReferencedOpenAPISchema(ctx: GenerationContext, schema: GenericSchema) {
-  const metadata = getOpenApiMetadata(schema)
-  const innerSchema = unwrapChained(schema)
-  const defaultValue = getDefaultValue(schema)
-  const isNullable = isNullableSchema(schema)
+function constructReferencedOpenAPISchema(ctx: GenerationContext, info: SchemaInfo) {
+  const { metadata, refId, defaultValue, isNullable } = info
 
   if (metadata.type) {
     return { ok: true, value: ctx.specifics.mapNullableType(metadata.type, isNullable) } as const
   }
 
-  const refId = getRefId(schema)
   const existing = refId === undefined ? undefined : ctx.schemaRefs.get(refId)
 
   if (typeof existing === 'object') {
@@ -102,29 +103,25 @@ function constructReferencedOpenAPISchema(ctx: GenerationContext, schema: Generi
     ctx.schemaRefs.set(refId, 'pending')
   }
 
-  return toOpenAPISchema(ctx, innerSchema, isNullable, defaultValue)
+  return toOpenAPISchema(ctx, info)
 }
 
 /**
  * Generates an OpenAPI SchemaObject or a ReferenceObject with all the provided metadata applied.
  */
-function generateSimpleSchema(ctx: GenerationContext, schema: GenericSchema) {
-  const metadata = getOpenApiMetadata(schema)
-  const refId = getRefId(schema)
+function generateSimpleSchema(ctx: GenerationContext, info: SchemaInfo) {
+  const { metadata, refId, isNullable } = info
   const existing = refId === undefined ? undefined : ctx.schemaRefs.get(refId)
 
   if (refId === undefined || existing === undefined) {
-    return generateSchemaWithMetadata(ctx, schema)
+    return generateSchemaWithMetadata(ctx, info)
   }
 
   const referenceObject: ReferenceObject = { $ref: schemaRef(refId) }
 
   // We are currently calculating this schema or there is nothing
   if (existing === 'pending') {
-    return {
-      ok: true,
-      value: ctx.specifics.mapNullableOfRef(referenceObject, isNullableSchema(schema)),
-    } as const
+    return { ok: true, value: ctx.specifics.mapNullableOfRef(referenceObject, isNullable) } as const
   }
 
   const differsFromRegistered = (value: unknown, key: string) =>
@@ -139,7 +136,7 @@ function generateSimpleSchema(ctx: GenerationContext, schema: GenericSchema) {
   }
 
   // New metadata from the valibot schema's own properties (nullable, default, ...)
-  const referenced = constructReferencedOpenAPISchema(ctx, schema)
+  const referenced = constructReferencedOpenAPISchema(ctx, info)
   if (!referenced.ok) {
     return referenced
   }
@@ -167,16 +164,17 @@ export function generateSchemaWithRef(
 ):
   | { readonly ok: true; readonly value: SchemaObject | ReferenceObject }
   | { readonly ok: false; readonly error: ValibotToOpenAPIError } {
-  const refId = getRefId(schema)
+  const info = schemaInfo(schema)
+  const { refId } = info
   if (refId !== undefined && !ctx.schemaRefs.has(refId)) {
-    const result = generateSimpleSchema(ctx, schema)
+    const result = generateSimpleSchema(ctx, info)
     if (!result.ok) {
       return result
     }
     ctx.schemaRefs.set(refId, result.value)
     return { ok: true, value: { $ref: schemaRef(refId) } } as const
   }
-  return generateSimpleSchema(ctx, schema)
+  return generateSimpleSchema(ctx, info)
 }
 
 /**

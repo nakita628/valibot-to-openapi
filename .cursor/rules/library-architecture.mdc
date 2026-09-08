@@ -56,9 +56,13 @@ if (!result.ok) {
 return { ok: true, value: schema } as const
 ```
 
-- Do **not** introduce a named `Result<T, E>` type, a helper like `ok()` / `err()`, or a class.
-  The literal `{ ok, value }` / `{ ok, error }` shape with `as const` at the return site is the
-  convention, and the return type stays inferred.
+- Do **not** introduce a helper like `ok()` / `err()`, or a class. The literal
+  `{ ok, value }` / `{ ok, error }` shape with `as const` at the return site is the convention,
+  and the return type stays inferred.
+- `Result<T>` in `src/errors` is **module-local and not exported**: it exists only to type the
+  two list helpers below. A return site still spells the literal out and its return type stays
+  inferred; where a caller needs the union named, it goes at the call site as an explicit type
+  argument (`collectEntries<ResponseObject | ReferenceObject>(...)`), not as an annotation.
 - Propagate a failure by returning it unchanged; only the layer that can add context rewrites it
   (`enhanceMissingParametersError` is the one place that does).
 - An infallible transformer returns its value directly. Do not wrap something that cannot fail.
@@ -78,6 +82,11 @@ return { ok: true, value: schema } as const
   the anonymous object types inference would otherwise produce. Keep the explicit return type.
 - Adding a member means: extend the union, add a constructor with a TSDoc block explaining when
   it fires, export both from `src/index.ts`, and add a row to the README.
+- The module also holds the two helpers `collect` (results → array) and `collectEntries` (keyed
+  results → record), typed by a module-local `Result<T>` that is deliberately not exported.
+  Both short-circuit on the first failure in one pass. Use them instead of scanning a list twice
+  with `find(x => !x.ok)` followed by `flatMap(x => x.ok ? [x.value] : [])`. They live here
+  rather than in `utils` because `utils` is a leaf and may not name the error type.
 
 ## Reading valibot schemas
 

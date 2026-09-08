@@ -1,5 +1,6 @@
 import type { GenericSchema } from 'valibot'
 
+import { collect } from '../errors/index.js'
 import type { SchemaOf } from '../guard/index.js'
 import { isSchemaType } from '../guard/index.js'
 import { getInternalMetadata, getRefId } from '../metadata/index.js'
@@ -34,12 +35,13 @@ export function unionSchema(
   preferredType: UnionPreferredType | undefined,
 ) {
   const key = getInternalMetadata(schema).unionPreferredType ?? preferredType ?? 'anyOf'
-  const options = flattenUnionOptions(schema).map((option) => mapItem(unwrapNullable(option)))
-  const failed = options.find((option) => !option.ok)
-  if (failed !== undefined && !failed.ok) {
-    return failed
+  const options = collect(
+    flattenUnionOptions(schema).map((option) => mapItem(unwrapNullable(option))),
+  )
+  if (!options.ok) {
+    return options
   }
-  const schemas = mapNullableOfArray(options.flatMap((option) => (option.ok ? [option.value] : [])))
+  const schemas = mapNullableOfArray([...options.value])
   // `anyOf` / `oneOf` must be non-empty arrays; a union of only `undefined` accepts anything
   if (schemas.length === 0) {
     return { ok: true, value: {} } as const
@@ -103,12 +105,11 @@ export function variantSchema(
   mapItem: MapSubSchema,
   generateSchemaRef: (refId: string) => string,
 ) {
-  const options = schema.options.map((option) => mapItem(option))
-  const failed = options.find((option) => !option.ok)
-  if (failed !== undefined && !failed.ok) {
-    return failed
+  const options = collect(schema.options.map((option) => mapItem(option)))
+  if (!options.ok) {
+    return options
   }
-  const optionSchemas = options.flatMap((option) => (option.ok ? [option.value] : []))
+  const optionSchemas = [...options.value]
   if (isNullable) {
     return { ok: true, value: { oneOf: mapNullableOfArray(optionSchemas, isNullable) } } as const
   }
@@ -141,14 +142,11 @@ export function intersectSchema(
   ) => (SchemaObject | ReferenceObject)[],
   mapItem: MapSubSchema,
 ) {
-  const options = flattenIntersectOptions(schema).map((option) => mapItem(option))
-  const failed = options.find((option) => !option.ok)
-  if (failed !== undefined && !failed.ok) {
-    return failed
+  const options = collect(flattenIntersectOptions(schema).map((option) => mapItem(option)))
+  if (!options.ok) {
+    return options
   }
-  const allOfSchema: SchemaObject = {
-    allOf: options.flatMap((option) => (option.ok ? [option.value] : [])),
-  }
+  const allOfSchema: SchemaObject = { allOf: [...options.value] }
   return {
     ok: true,
     value: isNullable ? { anyOf: mapNullableOfArray([allOfSchema], isNullable) } : allOfSchema,

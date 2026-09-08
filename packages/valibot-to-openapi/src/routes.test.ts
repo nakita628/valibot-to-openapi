@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { createRegistry, generateComponents, generateDocument } from './index.js'
+import { OpenAPIRegistry, generateComponents, generateDocument } from './index.js'
 import * as v from './index.js'
 
 const config = { openapi: '3.0.0', info: { title: 'API', version: '1.0.0' } } as const
 
 describe('registry', () => {
   it('registers parameters with the refId as the default name and keeps explicit names', () => {
-    const registry = createRegistry()
+    const registry = OpenAPIRegistry()
     registry.registerParameter('Id', v.pipe(v.string(), v.openapi({ param: { in: 'path' } })))
     registry.registerParameter(
       'Q',
@@ -29,9 +29,9 @@ describe('registry', () => {
   })
 
   it('registers raw components, merges them with generated ones and sorts on request', () => {
-    const parent = createRegistry()
+    const parent = OpenAPIRegistry()
     parent.register('B', v.string())
-    const registry = createRegistry([parent])
+    const registry = OpenAPIRegistry([parent])
     registry.register('A', v.number())
     registry.registerComponent('schemas', 'Raw', { type: 'string' })
     registry.registerComponent('parameters', 'RawParam', { name: 'raw', in: 'query' })
@@ -54,14 +54,14 @@ describe('registry', () => {
   })
 
   it('keeps registered schemas usable for parsing', () => {
-    const User = createRegistry().register('User', v.object({ name: v.string() }))
+    const User = OpenAPIRegistry().register('User', v.object({ name: v.string() }))
     expect(v.parse(User, { name: 'a' })).toStrictEqual({ name: 'a' })
   })
 })
 
 describe('parameters', () => {
   it('generates path, query, header and cookie parameters with metadata', () => {
-    const Limit = createRegistry().registerParameter(
+    const Limit = OpenAPIRegistry().registerParameter(
       'Limit',
       v.pipe(v.optional(v.number()), v.openapi({ param: { name: 'limit', in: 'query' } })),
     )
@@ -171,7 +171,7 @@ describe('parameters', () => {
         data: { key: 'in', values: ['query', 'path'] },
       },
     })
-    const registry = createRegistry()
+    const registry = OpenAPIRegistry()
     const P = registry.registerParameter(
       'P',
       v.pipe(v.string(), v.openapi({ param: { name: 'p', in: 'path' } })),
@@ -191,7 +191,7 @@ describe('parameters', () => {
 
 describe('routes', () => {
   it('generates request bodies, responses, headers, raw content and webhooks', () => {
-    const registry = createRegistry()
+    const registry = OpenAPIRegistry()
     const User = registry.register('User', v.object({ name: v.string() }))
     registry.registerPath({
       method: 'post',

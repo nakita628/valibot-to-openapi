@@ -1,3 +1,4 @@
+import { collect } from '../errors/index.js'
 import type { SchemaOf } from '../guard/index.js'
 import { findValidation, inputValidations, requirementNumber } from '../pipe/index.js'
 import type { MapNullableType, MapSubSchema, VersionSpecifics } from '../types/index.js'
@@ -71,19 +72,15 @@ export function tupleSchema(
   if (rest !== undefined && !rest.ok) {
     return rest
   }
-  const items = schema.items.map((item) => mapItem(item))
-  const failed = items.find((item) => !item.ok)
-  if (failed !== undefined && !failed.ok) {
-    return failed
+  const items = collect(schema.items.map((item) => mapItem(item)))
+  if (!items.ok) {
+    return items
   }
   return {
     ok: true,
     value: {
       ...mapNullableType('array'),
-      ...mapTupleItems(
-        items.flatMap((item) => (item.ok ? [item.value] : [])),
-        rest?.value,
-      ),
+      ...mapTupleItems([...items.value], rest?.value),
     },
   } as const
 }

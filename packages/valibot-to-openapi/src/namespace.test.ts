@@ -1,7 +1,13 @@
 import * as valibot from 'valibot'
 import { describe, expect, it } from 'vite-plus/test'
 
-import { getOpenApiMetadata, getRefId, OpenApiGeneratorV3, OpenAPIRegistry } from './index.js'
+import {
+  OpenAPIRegistry,
+  generateComponents,
+  generateDocument,
+  getOpenApiMetadata,
+  getRefId,
+} from './index.js'
 import * as v from './index.js'
 
 describe('root entry', () => {
@@ -20,7 +26,7 @@ describe('root entry', () => {
       v.openapi('User'),
     )
     expect(getRefId(User)).toBe('User')
-    expect(new OpenApiGeneratorV3([User]).generateComponents()).toStrictEqual({
+    expect(generateComponents([User], { openapi: '3.0.0' })).toStrictEqual({
       ok: true,
       value: {
         components: {
@@ -46,7 +52,7 @@ describe('root entry', () => {
   })
 
   it('reproduces the README example document', () => {
-    const registry = new OpenAPIRegistry()
+    const registry = OpenAPIRegistry()
     const UserIdSchema = registry.registerParameter(
       'UserId',
       v.pipe(v.string(), v.openapi({ param: { name: 'id', in: 'path' }, example: '1212121' })),
@@ -81,7 +87,7 @@ describe('root entry', () => {
     })
     const info = { version: '1.0.0', title: 'My API', description: 'This is the API' }
     expect(
-      new OpenApiGeneratorV3(registry.definitions).generateDocument({
+      generateDocument(registry.definitions, {
         openapi: '3.0.0',
         info,
         servers: [{ url: 'v1' }],
