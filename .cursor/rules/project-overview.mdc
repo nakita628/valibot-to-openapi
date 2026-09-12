@@ -57,7 +57,7 @@ vp run -r test                                    # vitest across the workspace
 vp run check                                      # format check + oxlint (type-aware) everywhere
 vp run lint                                       # markdownlint, textlint, cspell, secretlint, actionlint
 vp run fix                                        # auto-fix formatting, Markdown, prose and lint
-vp run generate                                   # build, then write test/out/*.yaml
+vp run generate                                   # build, then write test/out/*.yml
 vp run example                                    # build, then run the example script
 ```
 

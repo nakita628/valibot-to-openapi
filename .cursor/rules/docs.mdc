@@ -48,7 +48,7 @@ Config: `.textlintrc.yml`. Docs are English; the Japanese presets are deliberate
 
 ## Spelling (cspell)
 
-Config: `cspell.config.yaml`, checking **every** file in the repository, code included — a typo
+Config: `cspell.config.yml`, checking **every** file in the repository, code included — a typo
 inside a fenced block is still a typo, because readers copy those blocks.
 
 - A word cspell does not know goes into `project-words.txt`: one per line, sorted, lowercase

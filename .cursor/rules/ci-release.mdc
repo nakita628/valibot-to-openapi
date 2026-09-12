@@ -44,7 +44,7 @@ A push that does not change the version does nothing, and every job is safe to r
 Every action is pinned to a commit digest with the tag kept as a trailing comment, the shape
 `helpers:pinGitHubActionDigests` maintains:
 
-```yaml
+```yml
 - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 ```
 
@@ -57,7 +57,7 @@ the job. Renovate updates these; action digest bumps are deliberately not auto-m
 release for the current platform, verifies it, caches it under `node_modules/.cache` and runs it.
 Bumping actionlint means updating `VERSION` **and** every entry of `CHECKSUMS` together, taken
 from that release's `*_checksums.txt`. Repository-specific actionlint settings live in
-`.github/actionlint.yaml`.
+`.github/actionlint.yml`.
 
 ## Renovate
 
