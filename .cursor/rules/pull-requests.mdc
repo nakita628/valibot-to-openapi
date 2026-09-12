@@ -56,7 +56,7 @@ deleting it. One to three sentences per heading.
 | How     | the approach, then the evidence: the gate below, and the generated YAML       |
 
 When a generator or `src/specifics` changed, run `vp run generate` and paste the relevant
-part of `test/out/*.yml`: the aggregate output is the fastest way to see that a change is
+part of `test/out/*.yaml`: the aggregate output is the fastest way to see that a change is
 right, and a reviewer cannot run it from the diff alone.
 
 ## Green before you open it

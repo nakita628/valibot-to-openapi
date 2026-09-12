@@ -27,8 +27,8 @@ for (const version of VERSIONS) {
     throw new Error(document.error.message)
   }
   const yaml = stringify(document.value)
-  writeFileSync(new URL(`valibot-to-openapi-${version}.yml`, outDir), yaml)
-  console.log(`OK   ${version}  valibot-to-openapi-${version}.yml (${yaml.length} bytes)`)
+  writeFileSync(new URL(`valibot-to-openapi-${version}.yaml`, outDir), yaml)
+  console.log(`OK   ${version}  valibot-to-openapi-${version}.yaml (${yaml.length} bytes)`)
 }
 
 console.log(`\nwritten to ${outDir.pathname}`)

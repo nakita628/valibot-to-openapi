@@ -35,6 +35,6 @@ import * as v from 'valibot-to-openapi'
 const Schema = v.pipe(v.string(), v.openapi({ example: 'x' }))
 ```
 
-```yml
+```yaml
 # the document produced, or the error
 ```

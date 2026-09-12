@@ -1,6 +1,6 @@
 ---
 description: Rules for touching the lint, format and oxlint plugin configuration
-globs: **/vite.config.ts,packages/valibot-to-openapi/lint/*.js,cspell.config.yml,.textlintrc.yml,.markdownlint-cli2.jsonc,project-words.txt
+globs: **/vite.config.ts,packages/valibot-to-openapi/lint/*.js,cspell.config.yaml,.textlintrc.yml,.markdownlint-cli2.jsonc,project-words.txt
 ---
 
 # Changing the lint and format configuration
@@ -28,7 +28,7 @@ have to rediscover it.
 | Library lint, build and test config       | `packages/valibot-to-openapi/vite.config.ts`         |
 | Structural conventions a glob cannot express | `packages/valibot-to-openapi/lint/custom.js`      |
 | Script-workspace lint                     | `test/vite.config.ts`, `example/vite.config.ts`      |
-| Markdown structure / prose / spelling     | `.markdownlint-cli2.jsonc`, `.textlintrc.yml`, `cspell.config.yml` |
+| Markdown structure / prose / spelling     | `.markdownlint-cli2.jsonc`, `.textlintrc.yml`, `cspell.config.yaml` |
 | Secrets, workflow lint                    | `.secretlintrc.json`, `scripts/actionlint.ts`        |
 
 Formatting options live **only** in the root config; workspaces inherit them and declare nothing

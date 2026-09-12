@@ -32,7 +32,7 @@ built from pull request titles, so write it for the person reading the releases 
 
 <!--
 The approach in a sentence, then the evidence. If a generator or the version specifics
-changed, paste the relevant part of `test/out/*.yml` after `vp run generate`.
+changed, paste the relevant part of `test/out/*.yaml` after `vp run generate`.
 Tick only what you ran; paste the output of anything that failed.
 -->
 

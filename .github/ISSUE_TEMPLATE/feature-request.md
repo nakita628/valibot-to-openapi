@@ -33,6 +33,6 @@ labels: ['enhancement']
 // the schema
 ```
 
-```yml
+```yaml
 # the document it should produce
 ```
