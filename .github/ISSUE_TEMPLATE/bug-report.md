@@ -5,13 +5,25 @@ title: 'fix: '
 labels: ['bug']
 ---
 
+## Why
+
+<!-- What is wrong, and why it matters. -->
+
 ## What
 
 <!-- What happens, and what should happen instead. -->
 
 ## Where
 
-<!-- `valibot-to-openapi` version, `valibot` version, OpenAPI version (3.0 / 3.1 / 3.2), Node.js version. -->
+<!-- `valibot-to-openapi` version, `valibot` version, OpenAPI version (3.0 / 3.1 / 3.2). -->
+
+## Who
+
+<!-- Who sees it: every user, one OpenAPI version, a specific schema. -->
+
+## When
+
+<!-- When it started, or `unknown`. -->
 
 ## How
 
