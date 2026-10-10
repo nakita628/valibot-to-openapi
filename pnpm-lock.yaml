@@ -1691,8 +1691,8 @@ packages:
   fast-equals@4.0.3:
     resolution: {integrity: sha512-G3BSX9cfKttjr+2o1O22tYMLq0DPluZnYtq1rXumE1SpL/F/SLIfHx08WYQoWSIpeMYf8sRbJ8++71+v6Pnxfg==}
 
-  fast-equals@6.1.0:
-    resolution: {integrity: sha512-MDA0N5wXvmx0yR0xeOf20qVMbyaEzS2kuxhBrDrIT5w3Gap7bZ/24jtvOvbthbZFmf+7PCC8XCJKGpmhVtvbIg==}
+  fast-equals@6.1.1:
+    resolution: {integrity: sha512-VA9UvhVec1yj1UqkCLBCXgFBLbd6Pww2RGLa9biAHfl+/aOU9jTeP3idEtLLFouJIGDeugAxD/GhzHpjOSq4oA==}
     engines: {node: '>=6.0.0'}
 
   fast-glob@3.3.3:
@@ -3844,7 +3844,7 @@ snapshots:
       '@cspell/cspell-pipe': 10.2.1
       '@cspell/cspell-types': 10.2.1
       cspell-trie-lib: 10.2.1(@cspell/cspell-types@10.2.1)
-      fast-equals: 6.1.0
+      fast-equals: 6.1.1
 
   cspell-gitignore@10.2.1:
     dependencies:
@@ -3977,7 +3977,7 @@ snapshots:
 
   fast-equals@4.0.3: {}
 
-  fast-equals@6.1.0: {}
+  fast-equals@6.1.1: {}
 
   fast-glob@3.3.3:
     dependencies:
