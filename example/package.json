@@ -8,9 +8,9 @@
     "fix": "vp check --fix"
   },
   "devDependencies": {
-    "@types/node": "^26.1.1",
-    "valibot": "^1.4.2",
+    "@types/node": "26.6.6",
+    "valibot": "1.5.0",
     "valibot-to-openapi": "workspace:^",
-    "yaml": "^2.8.0"
+    "yaml": "2.9.1"
   }
 }
