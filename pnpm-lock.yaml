@@ -234,28 +234,28 @@ importers:
   example:
     devDependencies:
       '@types/node':
-        specifier: ^26.1.1
+        specifier: 26.6.6
         version: 26.6.6
       valibot:
-        specifier: ^1.4.2
+        specifier: 1.5.0
         version: 1.5.0(typescript@6.0.3)
       valibot-to-openapi:
         specifier: workspace:^
         version: link:../packages/valibot-to-openapi
       yaml:
-        specifier: ^2.8.0
+        specifier: 2.9.1
         version: 2.9.1
 
   packages/valibot-to-openapi:
     devDependencies:
       '@types/node':
-        specifier: ^26.1.1
+        specifier: 26.6.6
         version: 26.6.6
       typescript:
         specifier: 6.0.3
         version: 6.0.3
       valibot:
-        specifier: ^1.4.2
+        specifier: 1.5.0
         version: 1.5.0(typescript@6.0.3)
 
   test:
